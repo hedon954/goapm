@@ -19,7 +19,8 @@ import (
 type ctxKey string
 
 const (
-	ctxBeginTime    ctxKey = "sqldb.begin"
+	ctxBeginTime ctxKey = "sqldb.begin"
+
 	mysqlTracerName string = "goapm/mysql"
 )
 

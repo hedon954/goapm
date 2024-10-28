@@ -1,3 +1,6 @@
+genpb:
+	protoc --go_out=./fixtures --go-grpc_out=./fixtures ./fixtures/*.proto
+
 docker-up:
 	docker compose -f scripts/setup/docker-compose.yml up -d
 	./scripts/ci/wait_mysql_start.sh

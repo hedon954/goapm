@@ -99,7 +99,6 @@ func Test_GORM_UPDATE(t *testing.T) {
 
 	const nameBefore = "John"
 	const nameAfter = "Alice"
-
 	t.Run("update without context should work", func(t *testing.T) {
 		user := User{
 			Uid:     uuid.NewString(),
