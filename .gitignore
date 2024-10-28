@@ -8,3 +8,7 @@ main
 # binary files
 
 # config file
+
+
+# volumes
+**/volumes

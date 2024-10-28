@@ -58,6 +58,7 @@ type Conn struct {
 	hooks Hooks
 }
 
+//nolint:dupl
 func (conn *Conn) ExecContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Result, error) {
 	var err error
 
@@ -88,6 +89,7 @@ func (conn *Conn) execContext(ctx context.Context, query string, args []driver.N
 	}
 }
 
+//nolint:dupl
 func (conn *Conn) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
 	var err error
 
@@ -154,6 +156,8 @@ type Stmt struct {
 // as an INSERT or UPDATE.
 //
 // ExecContext must honor the context timeout and return when it is canceled.
+//
+//nolint:dupl
 func (s *Stmt) ExecContext(ctx context.Context, args []driver.NamedValue) (driver.Result, error) {
 	var err error
 
@@ -188,6 +192,8 @@ func (s *Stmt) execContext(ctx context.Context, args []driver.NamedValue) (drive
 // SELECT.
 //
 // QueryContext must honor the context timeout and return when it is canceled.
+//
+//nolint:dupl
 func (s *Stmt) QueryContext(ctx context.Context, args []driver.NamedValue) (driver.Rows, error) {
 	var err error
 

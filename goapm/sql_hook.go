@@ -2,9 +2,11 @@ package goapm
 
 import (
 	"context"
+	"database/sql"
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
@@ -34,6 +36,26 @@ func SetSlowSqlThreshold(d time.Duration) {
 // SetLongTxThreshold sets the threshold for a long transaction.
 func SetLongTxThreshold(d time.Duration) {
 	longTxThreshold = d
+}
+
+var once sync.Once
+
+// NewMySQL returns a new MySQL driver with hooks.
+func NewMySQL(connectURL string) (*sql.DB, error) {
+	driverName := "mysql-wrapper"
+	once.Do(func() {
+		sql.Register(driverName, wrap(&mysql.MySQLDriver{}, connectURL))
+	})
+
+	db, err := sql.Open(driverName, connectURL)
+	if err != nil {
+		return nil, err
+	}
+	err = db.Ping()
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
 }
 
 func wrap(d driver.Driver, connectURL string) driver.Driver {
@@ -89,6 +111,7 @@ func wrap(d driver.Driver, connectURL string) driver.Driver {
 			return ctx, nil
 		},
 		OnError: func(ctx context.Context, err error, query string, args ...any) error {
+			// trace
 			span := trace.SpanFromContext(ctx)
 			defer span.End()
 			if !errors.Is(err, driver.ErrSkip) {

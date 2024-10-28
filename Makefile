@@ -1,5 +1,11 @@
-main:
-	go run main.go
+docker-up:
+	docker compose -f scripts/setup/docker-compose.yml up -d
+	./scripts/ci/wait_mysql_start.sh
+	mysql -h 127.0.0.1 -P 3306 -u root -p'root' < scripts/setup/init.sql
 
-genpb:
-	protoc --go_out=. ./protos/*
+docker-down:
+	docker compose -f scripts/setup/docker-compose.yml down
+
+docker-restart:
+	make docker-down
+	make docker-up

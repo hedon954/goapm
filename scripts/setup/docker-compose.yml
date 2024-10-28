@@ -1,0 +1,12 @@
+services:
+  goapm-mysql:
+    image: mysql:9.0.1
+    container_name: goapm-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    volumes:
+      - ./volumes/mysql/data:/var/lib/mysql
+      - ./volumes/mysql/logs:/var/log/mysql
+    restart: always
