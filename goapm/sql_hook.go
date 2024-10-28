@@ -6,10 +6,10 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
+	"github.com/google/uuid"
 	"github.com/xwb1989/sqlparser"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -38,14 +38,10 @@ func SetLongTxThreshold(d time.Duration) {
 	longTxThreshold = d
 }
 
-var once sync.Once
-
 // NewMySQL returns a new MySQL driver with hooks.
 func NewMySQL(connectURL string) (*sql.DB, error) {
-	driverName := "mysql-wrapper"
-	once.Do(func() {
-		sql.Register(driverName, wrap(&mysql.MySQLDriver{}, connectURL))
-	})
+	driverName := fmt.Sprintf("%s-%s", "mysql-wrapper", uuid.NewString())
+	sql.Register(driverName, wrap(&mysql.MySQLDriver{}, connectURL))
 
 	db, err := sql.Open(driverName, connectURL)
 	if err != nil {

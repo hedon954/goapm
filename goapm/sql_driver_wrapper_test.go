@@ -12,14 +12,18 @@ import (
 )
 
 type User struct {
-	Uid     string
-	Name    string
-	Age     int
-	Gender  string
-	Address string
-	Phone   string
-	Email   string
-	Salary  float64
+	Uid     string  `gorm:"column:uid;unique"`
+	Name    string  `gorm:"column:name"`
+	Age     int     `gorm:"column:age"`
+	Gender  string  `gorm:"column:gender"`
+	Address string  `gorm:"column:address"`
+	Phone   string  `gorm:"column:phone"`
+	Email   string  `gorm:"column:email"`
+	Salary  float64 `gorm:"column:salary"`
+}
+
+func (u *User) TableName() string {
+	return "t_user"
 }
 
 func Test_SQLDriverWrapper_SELECT(t *testing.T) {
