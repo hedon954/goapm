@@ -57,6 +57,9 @@ func NewInfra(name string, opts ...InfraOption) *Infra {
 // name is the business name of the db, and addr is the address of the db.
 func WithMySQL(name, addr string) InfraOption {
 	return func(infra *Infra) {
+		if infra.mysqls[name] != nil {
+			panic(fmt.Errorf("goapm mysql db already exists: %s", name))
+		}
 		db, err := goapm.NewMySQL(name, addr)
 		if err != nil {
 			panic(fmt.Errorf("failed to create goapm mysql db: %w", err))
@@ -73,6 +76,9 @@ func WithMySQL(name, addr string) InfraOption {
 // name is the business name of the db, and addr is the address of the db.
 func WithGorm(name, addr string) InfraOption {
 	return func(infra *Infra) {
+		if infra.mysqls[name] != nil {
+			panic(fmt.Errorf("goapm gorm db already exists: %s", name))
+		}
 		db, err := goapm.NewGorm(name, addr)
 		if err != nil {
 			panic(fmt.Errorf("failed to create goapm gorm db: %w", err))
@@ -92,6 +98,9 @@ func WithGorm(name, addr string) InfraOption {
 // name is the business name of the redis, and addr is the address of the redis.
 func WithRedisV6(name, addr, password string, db ...int) InfraOption {
 	return func(infra *Infra) {
+		if infra.redisV6s[name] != nil {
+			panic(fmt.Errorf("goapm redis v6 client already exists: %s", name))
+		}
 		client, err := goapm.NewRedisV6(name, addr, password, db...)
 		if err != nil {
 			panic(fmt.Errorf("failed to create goapm redis v6 client: %w", err))
@@ -108,6 +117,9 @@ func WithRedisV6(name, addr, password string, db ...int) InfraOption {
 // name is the business name of the redis, and addr is the address of the redis.
 func WithRedisV9(name, addr, password string, db ...int) InfraOption {
 	return func(infra *Infra) {
+		if infra.redisV9s[name] != nil {
+			panic(fmt.Errorf("goapm redis v9 client already exists: %s", name))
+		}
 		client, err := goapm.NewRedisV9(name, addr, password, db...)
 		if err != nil {
 			panic(fmt.Errorf("failed to create goapm redis v9 client: %w", err))
