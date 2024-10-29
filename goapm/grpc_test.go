@@ -21,6 +21,7 @@ func TestGrpcServerAndClient_ShouldWork(t *testing.T) {
 	server := NewGrpcServer(":50051")
 	protos.RegisterHelloServiceServer(server, &helloSvc{})
 	server.Start()
+	defer server.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 

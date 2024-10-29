@@ -41,7 +41,7 @@ func NewGrpcServer(addr string, opts ...grpc.ServerOption) *GrpcServer {
 	}
 }
 
-func (s *GrpcServer) Start() (stop func()) {
+func (s *GrpcServer) Start() {
 	listener, err := net.Listen("tcp", s.addr)
 	if err != nil {
 		panic("GRPC server listen failed: " + err.Error())
@@ -52,10 +52,9 @@ func (s *GrpcServer) Start() (stop func()) {
 			panic("GRPC server serve failed: " + err.Error())
 		}
 	}()
-	return s.stop
 }
 
-func (s *GrpcServer) stop() {
+func (s *GrpcServer) Stop() {
 	s.Server.GracefulStop()
 }
 
