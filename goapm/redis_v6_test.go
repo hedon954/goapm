@@ -8,7 +8,7 @@ import (
 )
 
 func TestRedisV6(t *testing.T) {
-	client, err := NewRedisV6("127.0.0.1:6379", "", 10)
+	client, err := NewRedisV6("test", "127.0.0.1:6379", "", 10)
 	assert.Nil(t, err)
 	defer client.Close()
 

@@ -1,0 +1,4 @@
+- type: log
+  tail_files: true
+  paths:
+    - /logs/**.log

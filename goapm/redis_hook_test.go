@@ -8,7 +8,7 @@ import (
 )
 
 func TestRedisHook(t *testing.T) {
-	client, err := NewRedisV9("127.0.0.1:6379", "")
+	client, err := NewRedisV9("test", "127.0.0.1:6379", "")
 	assert.Nil(t, err)
 	defer client.Close()
 

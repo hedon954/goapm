@@ -1,0 +1,12 @@
+max_bytes: 3145728
+max_procs: 1
+
+filebeat.config.inputs:
+  enabled: true
+  path: /logcollect/*.yml
+
+# output.console:
+#   pretty: true
+
+output.logstash:
+  hosts: ["goapm-logstash:5044"]

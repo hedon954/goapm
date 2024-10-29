@@ -1,0 +1,73 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+  tail_sampling:
+    decision_wait: 5s
+    num_traces: 50000
+    expected_new_traces_per_sec: 1
+    policies:
+      [
+        {
+          name: "error-always-sample",
+          type: boolean_attribute,
+          boolean_attribute: { key: haserror, value: true }
+        },
+        {
+          name: "slowsql-always-sample",
+          type: boolean_attribute,
+          boolean_attribute: { key: slowsql, value: true }
+        },
+        {
+          name: "longtx-always-sample",
+          type: boolean_attribute,
+          boolean_attribute: { key: longtx, value: true }
+        },
+        {
+          name: http-slow,
+          type: numeric_attribute,
+          numeric_attribute: { key: http.duration_ms, min_value: 1000, max_value: 9223372036854775807 }
+        },
+        {
+          name: http-status-error,
+          type: numeric_attribute,
+          numeric_attribute: { key: http.status_code, min_value: 500, max_value: 599 }
+        },
+        {
+          name: grpc-slow,
+          type: numeric_attribute,
+          numeric_attribute: { key: grpc.duration_ms, min_value: 1000, max_value: 9223372036854775807 }
+        },
+      ]
+  filter/ottl:
+    error_mode: ignore
+    traces:
+      span:
+        - 'attributes["drop"] == true'
+
+exporters:
+  debug:
+  otlp/jaeger:
+    endpoint: goapm-jaeger:4317
+    tls:
+      insecure: true
+
+extensions:
+  health_check:
+  pprof:
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+service:
+  extensions: [health_check, pprof, zpages]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch, filter/ottl, tail_sampling]
+      exporters: [debug, otlp/jaeger]

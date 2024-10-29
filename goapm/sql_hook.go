@@ -40,9 +40,9 @@ func SetLongTxThreshold(d time.Duration) {
 }
 
 // NewMySQL returns a new MySQL driver with hooks.
-func NewMySQL(connectURL string) (*sql.DB, error) {
+func NewMySQL(name, connectURL string) (*sql.DB, error) {
 	driverName := fmt.Sprintf("%s-%s", "mysql-wrapper", uuid.NewString())
-	sql.Register(driverName, wrap(&mysql.MySQLDriver{}, connectURL))
+	sql.Register(driverName, wrap(&mysql.MySQLDriver{}, name, connectURL))
 
 	db, err := sql.Open(driverName, connectURL)
 	if err != nil {
@@ -55,7 +55,7 @@ func NewMySQL(connectURL string) (*sql.DB, error) {
 	return db, nil
 }
 
-func wrap(d driver.Driver, connectURL string) driver.Driver {
+func wrap(d driver.Driver, name, connectURL string) driver.Driver {
 	tracer := otel.Tracer(mysqlTracerName)
 	dsn, err := mysql.ParseDSN(connectURL)
 	if err != nil {
@@ -67,6 +67,7 @@ func wrap(d driver.Driver, connectURL string) driver.Driver {
 			ctx = context.WithValue(ctx, ctxBeginTime, time.Now())
 			if ctx, span := tracer.Start(ctx, "sqltrace"); span != nil {
 				span.SetAttributes(
+					attribute.String("mysql.name", name),
 					attribute.String("sql", truncate(query)),
 					attribute.String("args", truncate(sliceToString(args))),
 				)

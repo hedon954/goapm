@@ -12,7 +12,7 @@ import (
 
 func setupTestDB() (*gorm.DB, error) {
 	dsn := "root:root@tcp(127.0.0.1:3306)/goapm?charset=utf8mb4&parseTime=True&loc=Local"
-	return NewGorm(dsn)
+	return NewGorm("test", dsn)
 }
 
 func Test_GORM_SELECT(t *testing.T) {

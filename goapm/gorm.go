@@ -11,8 +11,8 @@ import (
 )
 
 // NewGorm returns a new Gorm DB with hooks.
-func NewGorm(connectURL string) (*gorm.DB, error) {
-	db, err := gorm.Open(newGormDialector(connectURL), &gorm.Config{})
+func NewGorm(name, connectURL string) (*gorm.DB, error) {
+	db, err := gorm.Open(newGormDialector(name, connectURL), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
@@ -26,9 +26,9 @@ type gormDialector struct {
 	gorm.Dialector
 }
 
-func newGormDialector(connectURL string) *gormDialector {
+func newGormDialector(name, connectURL string) *gormDialector {
 	driverName := fmt.Sprintf("%s-%s", "mysql-wrapper", uuid.NewString())
-	sql.Register(driverName, wrap(&mysqldriver.MySQLDriver{}, connectURL))
+	sql.Register(driverName, wrap(&mysqldriver.MySQLDriver{}, name, connectURL))
 	return &gormDialector{
 		connectURL: connectURL,
 		driverName: driverName,

@@ -17,12 +17,18 @@ const (
 )
 
 // NewRedisV9 creates a new redis client with tracing.
-func NewRedisV9(addr, password string) (*redis.Client, error) {
+// name is the business name of the redis client, it will be used in the span name.
+func NewRedisV9(name, addr, password string, db ...int) (*redis.Client, error) {
+	dbIndex := 0
+	if len(db) > 0 {
+		dbIndex = db[0]
+	}
 	client := redis.NewClient(&redis.Options{
 		Addr:     addr,
 		Password: password,
+		DB:       dbIndex,
 	})
-	client.AddHook(&redisHook{})
+	client.AddHook(&redisHook{name})
 
 	res, err := client.Ping(context.Background()).Result()
 	if err != nil {
@@ -34,7 +40,9 @@ func NewRedisV9(addr, password string) (*redis.Client, error) {
 	return client, nil
 }
 
-type redisHook struct{}
+type redisHook struct {
+	name string
+}
 
 func (h *redisHook) DialHook(next redis.DialHook) redis.DialHook {
 	return next
@@ -43,7 +51,7 @@ func (h *redisHook) DialHook(next redis.DialHook) redis.DialHook {
 func (h *redisHook) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
 	tracer := otel.Tracer(redisTracerName)
 	return func(ctx context.Context, cmd redis.Cmder) error {
-		ctx, span := tracer.Start(ctx, "redis.v9.processCmd")
+		ctx, span := tracer.Start(ctx, fmt.Sprintf("redis.v9.processCmd-[%s]", h.name))
 		defer span.End()
 
 		span.SetAttributes(attribute.String("cmd", truncate(cmd.String())))
@@ -60,7 +68,7 @@ func (h *redisHook) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
 func (h *redisHook) ProcessPipelineHook(next redis.ProcessPipelineHook) redis.ProcessPipelineHook {
 	tracer := otel.Tracer(redisTracerName)
 	return func(ctx context.Context, cmds []redis.Cmder) error {
-		ctx, span := tracer.Start(ctx, "redis.v9.processPipelineCmd")
+		ctx, span := tracer.Start(ctx, fmt.Sprintf("redis.v9.processPipelineCmd-[%s]", h.name))
 		defer span.End()
 
 		span.SetAttributes(attribute.String("cmd", truncate(fmt.Sprintf("%v", cmds))))
