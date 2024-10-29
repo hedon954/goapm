@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"runtime/debug"
 	"strconv"
 	"time"
 
@@ -25,16 +26,6 @@ type HTTPServer struct {
 	mux *http.ServeMux
 	*http.Server
 	tracer trace.Tracer
-}
-
-// HTTPResponse defines the interface for http response.
-type HTTPResponse interface {
-	// IsSuccess returns true if the response is successful.
-	IsSuccess() bool
-	// GetCode returns the code of the response.
-	GetCode() int
-	// GetErrorMessage returns the error message of the response.
-	GetErrorMessage() string
 }
 
 // NewHTTPServer creates a new HTTPServer,
@@ -123,6 +114,14 @@ func (th *traceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					trace.WithStackTrace(true),
 					trace.WithTimestamp(time.Now()),
 				)
+
+				// log
+				Logger.Error(ctx, "panic in http handler", fmt.Errorf("panic: %v", err), map[string]any{
+					"method": r.Method,
+					"path":   r.URL.Path,
+					"params": r.Form.Encode(),
+					"stack":  string(debug.Stack()),
+				})
 				http.Error(respWrapper, "Internal Server Error", http.StatusInternalServerError)
 			}
 		}()

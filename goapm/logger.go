@@ -37,6 +37,9 @@ func (l *logger) Debug(ctx context.Context, action string, kv map[string]any) {
 }
 
 func (l *logger) Error(ctx context.Context, action string, err error, kv map[string]any) {
+	if kv == nil {
+		kv = make(map[string]any)
+	}
 	if span := trace.SpanFromContext(ctx); span != nil {
 		kv[traceID] = span.SpanContext().TraceID().String()
 		span.SetAttributes(attribute.Bool("haserror", true))
