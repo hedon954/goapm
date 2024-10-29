@@ -18,14 +18,14 @@ func (s *helloSvc) SayHello(ctx context.Context, in *protos.HelloRequest) (*prot
 }
 
 func TestGrpcServerAndClient_ShouldWork(t *testing.T) {
-	server := NewGrpcServer(":50051")
+	server := NewGrpcServer(":")
 	protos.RegisterHelloServiceServer(server, &helloSvc{})
 	server.Start()
 	defer server.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 
-	client, err := NewGrpcClient("localhost:50051", "test server")
+	client, err := NewGrpcClient(server.addr, "test server")
 	assert.Nil(t, err)
 	res, err := protos.NewHelloServiceClient(client).SayHello(context.Background(),
 		&protos.HelloRequest{Name: "World"})

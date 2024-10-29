@@ -46,6 +46,8 @@ func (s *GrpcServer) Start() {
 	if err != nil {
 		panic("GRPC server listen failed: " + err.Error())
 	}
+	s.addr = listener.Addr().String()
+
 	go func() {
 		log.Printf("[%s][%s] starting grpc server on: %s\n", internal.BuildInfo.AppName(), internal.BuildInfo.Hostname(), s.addr)
 		if err := s.Server.Serve(listener); err != nil {
