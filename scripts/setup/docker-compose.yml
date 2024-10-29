@@ -10,3 +10,12 @@ services:
       - ./volumes/mysql/data:/var/lib/mysql
       - ./volumes/mysql/logs:/var/log/mysql
     restart: always
+  goapm-redis:
+    image: redis:7.4.0
+    container_name: apm-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./volumes/redis/data:/data
+      - ./volumes/redis/logs:/var/log/redis
+    restart: always
