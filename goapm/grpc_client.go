@@ -24,12 +24,14 @@ type GrpcClient struct {
 	*grpc.ClientConn
 }
 
-func NewGrpcClient(addr, server string) (*GrpcClient, error) {
-	conn, err := grpc.NewClient(
-		addr,
+func NewGrpcClient(addr, server string, opts ...grpc.DialOption) (*GrpcClient, error) {
+	options := []grpc.DialOption{
 		grpc.WithUnaryInterceptor(unaryClientInterceptor(server)),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
+	}
+	options = append(options, opts...)
+
+	conn, err := grpc.NewClient(addr, options...)
 	if err != nil {
 		return nil, err
 	}

@@ -28,10 +28,13 @@ type GrpcServer struct {
 	*grpc.Server
 }
 
-func NewGrpcServer(addr string) *GrpcServer {
-	server := grpc.NewServer(
+func NewGrpcServer(addr string, opts ...grpc.ServerOption) *GrpcServer {
+	options := []grpc.ServerOption{
 		grpc.UnaryInterceptor(unaryServerInterceptor()),
-	)
+	}
+	options = append(options, opts...)
+
+	server := grpc.NewServer(options...)
 	return &GrpcServer{
 		addr:   addr,
 		Server: server,
