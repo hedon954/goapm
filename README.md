@@ -4,6 +4,7 @@
 [![codecov](https://codecov.io/github/hedon954/goapm/graph/badge.svg?token=FEW1EL1FKG)](https://codecov.io/github/hedon954/goapm)
 [![CI](https://github.com/hedon954/goapm/workflows/build/badge.svg)](https://github.com/hedon954/goapm/actions)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/hedon954/goapm?sort=semver)](https://github.com/hedon954/goapm/releases)
+[![Go Reference](https://pkg.go.dev/badge/github.com/hedon954/goapm.svg)](https://pkg.go.dev/github.com/hedon954/goapm)
 
 `goapm` is a toolkit for monitoring and observability of golang applications. It provides a set of libraries that are wrapped around `opentelemetry`.
 
