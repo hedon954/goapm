@@ -1,6 +1,8 @@
 # goapm
 `goapm` is a toolkit for monitoring and observability of golang applications. It provides a set of libraries that are wrapped around `opentelemetry`.
 
+## Example
+- [goapm-example](https://github.com/hedon954/goapm-example)
 
 
 ## Features
@@ -19,21 +21,8 @@
 - [x] RotateLog
 
 
-
 ## Architecture
+![architecture](https://hedonspace.oss-cn-beijing.aliyuncs.com/img/image-20241031195051363.png)
 
 
 
-
-
-
-
-## QuickStart
-
-
-
-
-
-
-
-## Example
