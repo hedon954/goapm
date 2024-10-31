@@ -82,6 +82,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.31.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.31.0
 	golang.org/x/sys v0.26.0 // indirect
+	google.golang.org/genproto v0.0.0-20241021214115-324edc3d5d38
 	google.golang.org/protobuf v1.35.1
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.5.7

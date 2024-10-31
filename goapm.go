@@ -15,6 +15,11 @@ import (
 	"gorm.io/gorm"
 	"mosn.io/holmes"
 
+	// import this package to fix the issue: https://github.com/open-telemetry/opentelemetry-collector/issues/10476
+	// since we need to specify the version of google.golang.org/genproto, but we do not use it in the code,
+	// so we need to import it to avoid deleting it by the go mod tidy command
+	_ "google.golang.org/genproto/protobuf/api"
+
 	"github.com/hedon954/goapm/apm"
 )
 
