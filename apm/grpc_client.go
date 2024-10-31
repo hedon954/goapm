@@ -71,7 +71,7 @@ func unaryClientInterceptor(server string) grpc.UnaryClientInterceptor {
 		err := invoker(ctx, method, req, reply, cc, opts...)
 		if err != nil {
 			span.RecordError(err, trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
-			span.SetAttributes(attribute.Bool("haserror", true))
+			span.SetAttributes(attribute.Bool("error", true))
 			s, ok := status.FromError(err)
 			if ok {
 				span.SetAttributes(attribute.String("grpc.status_code", s.Code().String()))

@@ -116,7 +116,7 @@ func (th *traceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// panic recover
 		defer func() {
 			if err := recover(); err != nil {
-				span.SetAttributes(attribute.Bool("haserror", true))
+				span.SetAttributes(attribute.Bool("error", true))
 				span.RecordError(
 					fmt.Errorf("%v", err),
 					trace.WithStackTrace(true),

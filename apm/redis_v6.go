@@ -64,7 +64,7 @@ func wrapProcess(tracer trace.Tracer, name string, client *redis.Client) {
 
 			err := oldProcess(cmd)
 			if err != nil {
-				span.SetAttributes(attribute.Bool("haserror", true))
+				span.SetAttributes(attribute.Bool("error", true))
 				span.RecordError(err, trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
 			}
 			return err
@@ -82,7 +82,7 @@ func wrapProcessPipeline(tracer trace.Tracer, name string, client *redis.Client)
 
 			err := oldProcess(cmds)
 			if err != nil {
-				span.SetAttributes(attribute.Bool("haserror", true))
+				span.SetAttributes(attribute.Bool("error", true))
 				span.RecordError(err, trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
 			}
 			return err

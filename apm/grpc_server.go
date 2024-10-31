@@ -102,7 +102,7 @@ func unaryServerInterceptor() grpc.UnaryServerInterceptor {
 				statusCode = s.Code()
 			}
 			span.RecordError(err, trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
-			span.SetAttributes(attribute.Bool("haserror", true))
+			span.SetAttributes(attribute.Bool("error", true))
 			span.SetAttributes(attribute.String("grpc.status_code", s.Code().String()))
 		}
 

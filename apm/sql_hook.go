@@ -113,7 +113,7 @@ func wrap(d driver.Driver, name, connectURL string) driver.Driver {
 			span := trace.SpanFromContext(ctx)
 			defer span.End()
 			if !errors.Is(err, driver.ErrSkip) {
-				span.SetAttributes(attribute.Bool("haserror", true))
+				span.SetAttributes(attribute.Bool("error", true))
 				span.RecordError(err, trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
 				return err
 			}

@@ -43,7 +43,7 @@ func GinOtel() gin.HandlerFunc {
 		defer func() {
 			// panic recover
 			if err := recover(); err != nil {
-				span.SetAttributes(attribute.Bool("haserror", true))
+				span.SetAttributes(attribute.Bool("error", true))
 				span.RecordError(
 					fmt.Errorf("%v", err),
 					trace.WithStackTrace(true),

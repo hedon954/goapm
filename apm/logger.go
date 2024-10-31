@@ -42,7 +42,7 @@ func (l *logger) Error(ctx context.Context, action string, err error, kv map[str
 	}
 	if span := trace.SpanFromContext(ctx); span != nil {
 		kv[traceID] = span.SpanContext().TraceID().String()
-		span.SetAttributes(attribute.Bool("haserror", true))
+		span.SetAttributes(attribute.Bool("error", true))
 		span.RecordError(err, trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
 	}
 
