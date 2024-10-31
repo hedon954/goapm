@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
@@ -41,6 +42,13 @@ func NewHTTPServer(addr string) *HTTPServer {
 			ReadHeaderTimeout: 30 * time.Second, //nolint:mnd
 		},
 	}
+
+	srv.Handle("/metrics", promhttp.HandlerFor(MetricsReg, promhttp.HandlerOpts{
+		Registry: MetricsReg,
+	}))
+	srv.Handle("/heartbeat", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("ok"))
+	}))
 
 	return srv
 }
