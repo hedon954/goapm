@@ -15,7 +15,7 @@ import (
 	"gorm.io/gorm"
 	"mosn.io/holmes"
 
-	"github.com/hedon954/goapm/goapm"
+	"github.com/hedon954/goapm/apm"
 )
 
 // Infra is an infrastructure manager for goapm.
@@ -25,7 +25,7 @@ type Infra struct {
 	Tracer trace.Tracer
 	Name   string
 
-	redisV6s map[string]*goapm.RedisV6
+	redisV6s map[string]*apm.RedisV6
 	redisV9s map[string]*redis.Client
 	mysqls   map[string]*sql.DB
 	gorms    map[string]*gorm.DB
@@ -41,7 +41,7 @@ func NewInfra(name string, opts ...InfraOption) *Infra {
 	infra := &Infra{
 		Name:       name,
 		Tracer:     otel.Tracer(fmt.Sprintf("goapm/service/%s", name)),
-		redisV6s:   make(map[string]*goapm.RedisV6),
+		redisV6s:   make(map[string]*apm.RedisV6),
 		redisV9s:   make(map[string]*redis.Client),
 		mysqls:     make(map[string]*sql.DB),
 		gorms:      make(map[string]*gorm.DB),
@@ -60,14 +60,14 @@ func WithMySQL(name, addr string) InfraOption {
 		if infra.mysqls[name] != nil {
 			panic(fmt.Errorf("goapm mysql db already exists: %s", name))
 		}
-		db, err := goapm.NewMySQL(name, addr)
+		db, err := apm.NewMySQL(name, addr)
 		if err != nil {
 			panic(fmt.Errorf("failed to create goapm mysql db: %w", err))
 		}
 		infra.mysqls[name] = db
 		infra.closeFuncs = append(infra.closeFuncs, func() {
 			_ = db.Close()
-			goapm.Logger.Info(context.TODO(), "goapm mysql db closed", map[string]any{"name": name})
+			apm.Logger.Info(context.TODO(), "goapm mysql db closed", map[string]any{"name": name})
 		})
 	}
 }
@@ -79,7 +79,7 @@ func WithGorm(name, addr string) InfraOption {
 		if infra.mysqls[name] != nil {
 			panic(fmt.Errorf("goapm gorm db already exists: %s", name))
 		}
-		db, err := goapm.NewGorm(name, addr)
+		db, err := apm.NewGorm(name, addr)
 		if err != nil {
 			panic(fmt.Errorf("failed to create goapm gorm db: %w", err))
 		}
@@ -88,7 +88,7 @@ func WithGorm(name, addr string) InfraOption {
 			d, _ := db.DB()
 			if d != nil {
 				_ = d.Close()
-				goapm.Logger.Info(context.TODO(), "goapm gorm db closed", map[string]any{"name": name})
+				apm.Logger.Info(context.TODO(), "goapm gorm db closed", map[string]any{"name": name})
 			}
 		})
 	}
@@ -101,14 +101,14 @@ func WithRedisV6(name, addr, password string, db ...int) InfraOption {
 		if infra.redisV6s[name] != nil {
 			panic(fmt.Errorf("goapm redis v6 client already exists: %s", name))
 		}
-		client, err := goapm.NewRedisV6(name, addr, password, db...)
+		client, err := apm.NewRedisV6(name, addr, password, db...)
 		if err != nil {
 			panic(fmt.Errorf("failed to create goapm redis v6 client: %w", err))
 		}
 		infra.redisV6s[name] = client
 		infra.closeFuncs = append(infra.closeFuncs, func() {
 			_ = client.Close()
-			goapm.Logger.Info(context.TODO(), "goapm redis v6 client closed", map[string]any{"name": name})
+			apm.Logger.Info(context.TODO(), "goapm redis v6 client closed", map[string]any{"name": name})
 		})
 	}
 }
@@ -120,14 +120,14 @@ func WithRedisV9(name, addr, password string, db ...int) InfraOption {
 		if infra.redisV9s[name] != nil {
 			panic(fmt.Errorf("goapm redis v9 client already exists: %s", name))
 		}
-		client, err := goapm.NewRedisV9(name, addr, password, db...)
+		client, err := apm.NewRedisV9(name, addr, password, db...)
 		if err != nil {
 			panic(fmt.Errorf("failed to create goapm redis v9 client: %w", err))
 		}
 		infra.redisV9s[name] = client
 		infra.closeFuncs = append(infra.closeFuncs, func() {
 			_ = client.Close()
-			goapm.Logger.Info(context.TODO(), "goapm redis v9 client closed", map[string]any{"name": name})
+			apm.Logger.Info(context.TODO(), "goapm redis v9 client closed", map[string]any{"name": name})
 		})
 	}
 }
@@ -136,34 +136,34 @@ func WithRedisV9(name, addr, password string, db ...int) InfraOption {
 // It default provides some collectors defined in goapm/metric.go.
 func WithMetrics(collectors ...prometheus.Collector) InfraOption {
 	return func(infra *Infra) {
-		goapm.MetricsReg.MustRegister(collectors...)
+		apm.MetricsReg.MustRegister(collectors...)
 	}
 }
 
 // WithAutoPProf starts a holmes dumper to automatically record the running state of the program.
-func WithAutoPProf(autoPProfOpts *goapm.AutoPProfOpt, opts ...holmes.Option) InfraOption {
+func WithAutoPProf(autoPProfOpts *apm.AutoPProfOpt, opts ...holmes.Option) InfraOption {
 	return func(infra *Infra) {
-		h, err := goapm.NewHomes(autoPProfOpts, opts...)
+		h, err := apm.NewHomes(autoPProfOpts, opts...)
 		if err != nil {
 			panic(fmt.Errorf("failed to create goapm homes: %w", err))
 		}
 		h.Start()
-		goapm.Logger.Info(context.TODO(), "auto pprof started", map[string]any{
+		apm.Logger.Info(context.TODO(), "auto pprof started", map[string]any{
 			"enable_cpu":       autoPProfOpts.EnableCPU,
 			"enable_mem":       autoPProfOpts.EnableMem,
 			"enable_goroutine": autoPProfOpts.EnableGoroutine,
 		})
 		infra.closeFuncs = append(infra.closeFuncs, func() {
 			h.Stop()
-			goapm.Logger.Info(context.TODO(), "auto pprof stopped", nil)
+			apm.Logger.Info(context.TODO(), "auto pprof stopped", nil)
 		})
 	}
 }
 
 // WithAPM creates a new apm and adds it to the infra.
-func (infra *Infra) WithAPM(otelEndpoint string) InfraOption {
+func WithAPM(otelEndpoint string) InfraOption {
 	return func(infra *Infra) {
-		closeFunc, err := goapm.NewAPM(otelEndpoint)
+		closeFunc, err := apm.NewAPM(otelEndpoint)
 		if err != nil {
 			panic(fmt.Errorf("failed to create goapm apm: %w", err))
 		}
@@ -199,7 +199,7 @@ func (infra *Infra) Gorm(name string) *gorm.DB {
 }
 
 // RedisV6 returns the redis v6 client with the given name.
-func (infra *Infra) RedisV6(name string) *goapm.RedisV6 {
+func (infra *Infra) RedisV6(name string) *apm.RedisV6 {
 	return infra.redisV6s[name]
 }
 
@@ -214,7 +214,7 @@ func (infra *Infra) Stop() {
 		fn()
 	}
 
-	goapm.Logger.Info(context.TODO(), "goapm infra finished stopping", map[string]any{
+	apm.Logger.Info(context.TODO(), "goapm infra finished stopping", map[string]any{
 		"name": infra.Name,
 	})
 }
