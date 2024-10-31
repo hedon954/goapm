@@ -173,7 +173,7 @@ func WithAPM(otelEndpoint string) InfraOption {
 
 // WithRotateLog creates a new rotate log and sets it to the logrus.
 // It default rotates every 7 days and keeps 7 days' logs.
-func (infra *Infra) WithRotateLog(path string, opts ...rotatelogs.Option) InfraOption {
+func WithRotateLog(path string, opts ...rotatelogs.Option) InfraOption {
 	defaultOpts := []rotatelogs.Option{
 		rotatelogs.WithRotationTime(time.Hour * 24 * 7),
 		rotatelogs.WithRotationCount(24 * 7),

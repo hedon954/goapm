@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/hedon954/go-apm/examples/ordersvc/metric"
 	"github.com/hedon954/goapm"
-	"github.com/hedon954/goapm/apm"
 )
 
 func main() {
