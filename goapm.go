@@ -213,6 +213,11 @@ func (infra *Infra) RedisV9(name string) *redis.Client {
 	return infra.redisV9s[name]
 }
 
+// AppendCloser appends a closer to the infra.
+func (infra *Infra) AppendCloser(fn func()) {
+	infra.closeFuncs = append(infra.closeFuncs, fn)
+}
+
 // Stop stops the infra.
 func (infra *Infra) Stop() {
 	for _, fn := range infra.closeFuncs {
