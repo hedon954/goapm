@@ -32,3 +32,7 @@ func (b *buildInfo) Hostname() string {
 func (b *buildInfo) AppName() string {
 	return appName
 }
+
+func (b *buildInfo) SetAppName(name string) {
+	appName = name
+}

@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	// so we need to import it to avoid deleting it by the go mod tidy command
 
 	"github.com/cloudflare/tableflip"
 	"github.com/gin-gonic/gin"
@@ -20,13 +21,12 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
 	"mosn.io/holmes"
-
 	// import this package to fix the issue: https://github.com/open-telemetry/opentelemetry-collector/issues/10476
 	// since we need to specify the version of google.golang.org/genproto, but we do not use it in the code,
-	// so we need to import it to avoid deleting it by the go mod tidy command
 	_ "google.golang.org/genproto/protobuf/api"
 
 	"github.com/hedon954/goapm/apm"
+	"github.com/hedon954/goapm/internal"
 )
 
 // Infra is an infrastructure manager for goapm.
@@ -55,6 +55,8 @@ type InfraOption func(*Infra)
 
 // NewInfra creates a new infra with the given options.
 func NewInfra(name string, opts ...InfraOption) *Infra {
+	internal.BuildInfo.SetAppName(name)
+
 	infra := &Infra{
 		Name:       name,
 		Tracer:     otel.Tracer(fmt.Sprintf("goapm/service/%s", name)),
@@ -68,6 +70,10 @@ func NewInfra(name string, opts ...InfraOption) *Infra {
 		opt(infra)
 	}
 	return infra
+}
+
+func (infra *Infra) FullName() string {
+	return fmt.Sprintf("[%s][%s]", infra.Name, internal.BuildInfo.Hostname())
 }
 
 // WithTableflip creates a new tableflip and adds it to the infra.

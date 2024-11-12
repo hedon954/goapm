@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/hedon954/goapm/apm/internal"
+	"github.com/hedon954/goapm/internal"
 )
 
 // NewAPM creates a new APM component, which is a wrapper of opentelemetry.

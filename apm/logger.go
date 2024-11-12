@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/hedon954/goapm/apm/internal"
+	"github.com/hedon954/goapm/internal"
 )
 
 const traceID = "trace_id"

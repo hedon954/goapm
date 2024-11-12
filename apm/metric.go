@@ -7,7 +7,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 
-	"github.com/hedon954/goapm/apm/internal"
+	"github.com/hedon954/goapm/internal"
 )
 
 const (
