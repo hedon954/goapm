@@ -52,6 +52,8 @@ func NewMySQL(name, connectURL string) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	Logger.Info(context.TODO(), fmt.Sprintf("mysql sql.DB client[%s] connected", name), nil)
 	return db, nil
 }
 

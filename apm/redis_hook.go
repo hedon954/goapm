@@ -29,6 +29,8 @@ func NewRedisV9(name string, opts *redis.Options) (*redis.Client, error) {
 	if res != "PONG" {
 		return nil, fmt.Errorf("redis ping failed: %s", res)
 	}
+
+	Logger.Info(context.TODO(), fmt.Sprintf("redis v9 client[%s] connected", name), nil)
 	return client, nil
 }
 

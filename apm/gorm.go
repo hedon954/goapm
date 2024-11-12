@@ -1,6 +1,7 @@
 package apm
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -16,6 +17,8 @@ func NewGorm(name, connectURL string) (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	Logger.Info(context.TODO(), fmt.Sprintf("mysql gorm client[%s] connected", name), nil)
 	return db, nil
 }
 

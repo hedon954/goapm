@@ -31,6 +31,7 @@ func NewRedisV6(name string, opts *redis.Options) (*RedisV6, error) {
 		return nil, err
 	}
 
+	Logger.Info(context.TODO(), fmt.Sprintf("redis v6 client[%s] connected", name), nil)
 	return &RedisV6{
 		name:   name,
 		Client: rdb,
