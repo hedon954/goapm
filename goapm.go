@@ -338,6 +338,19 @@ func (infra *Infra) Tableflip() *tableflip.Upgrader {
 
 // Stop stops the infra.
 func (infra *Infra) Stop() {
+	// close the components in the reverse order of the creation
+	for i := len(infra.closeFuncs) - 1; i >= 0; i-- {
+		infra.closeFuncs[i]()
+	}
+
+	apm.Logger.Info(context.TODO(), "goapm infra finished stopping", map[string]any{
+		"name": infra.Name,
+	})
+}
+
+// WaitToStop waits for the infra to stop.
+// It should be called in front of the infra.Stop().
+func (infra *Infra) WaitToStop() {
 	if upg := infra.upg; upg != nil {
 		// when the new process starts successfully,
 		// calling upg.Ready will clear invalid fds and send a signal
@@ -349,13 +362,4 @@ func (infra *Infra) Stop() {
 		}
 		<-upg.Exit()
 	}
-
-	// close the components in the reverse order of the creation
-	for i := len(infra.closeFuncs) - 1; i >= 0; i-- {
-		infra.closeFuncs[i]()
-	}
-
-	apm.Logger.Info(context.TODO(), "goapm infra finished stopping", map[string]any{
-		"name": infra.Name,
-	})
 }
