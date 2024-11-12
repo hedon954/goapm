@@ -18,12 +18,6 @@ const (
 	ginTracerName = "goapm/gin"
 )
 
-func OtelMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-
-	}
-}
-
 // GinOtel creates a Gin middleware for tracing, metrics and logging.
 func GinOtel() gin.HandlerFunc {
 	tracer := otel.Tracer(ginTracerName)
