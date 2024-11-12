@@ -2,6 +2,8 @@ package apm
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -16,6 +18,7 @@ const traceID = "trace_id"
 func init() {
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 	logrus.AddHook(&logrusHook{})
+	logrus.AddHook(&logrusTracerHook{})
 }
 
 type logger struct{}
@@ -40,11 +43,7 @@ func (l *logger) Error(ctx context.Context, action string, err error, kv map[str
 	if kv == nil {
 		kv = make(map[string]any)
 	}
-	if span := trace.SpanFromContext(ctx); span != nil {
-		kv[traceID] = span.SpanContext().TraceID().String()
-		span.SetAttributes(attribute.Bool("error", true))
-		span.RecordError(err, trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
-	}
+	kv["err"] = err
 
 	logrus.
 		WithContext(ctx).
@@ -69,4 +68,29 @@ func (l *logrusHook) Fire(entry *logrus.Entry) error {
 	entry.Data["host"] = internal.BuildInfo.Hostname()
 	entry.Data["app"] = internal.BuildInfo.AppName()
 	return nil
+}
+
+type logrusTracerHook struct{}
+
+func (l *logrusTracerHook) Levels() []logrus.Level {
+	return []logrus.Level{logrus.ErrorLevel}
+}
+
+func (l *logrusTracerHook) Fire(entry *logrus.Entry) error {
+	if span := trace.SpanFromContext(entry.Context); span != nil {
+		entry.Data[traceID] = span.SpanContext().TraceID().String()
+		span.SetAttributes(attribute.Bool("error", true))
+		span.RecordError(getEntryError(entry), trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
+	}
+	return nil
+}
+
+func getEntryError(entry *logrus.Entry) error {
+	if errField, exists := entry.Data["err"]; exists {
+		if e, ok := errField.(error); ok {
+			return e
+		}
+		return fmt.Errorf("%v", errField)
+	}
+	return errors.New(entry.Message)
 }
