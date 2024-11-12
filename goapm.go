@@ -338,6 +338,18 @@ func (infra *Infra) Tableflip() *tableflip.Upgrader {
 
 // Stop stops the infra.
 func (infra *Infra) Stop() {
+	if upg := infra.upg; upg != nil {
+		// when the new process starts successfully,
+		// calling upg.Ready will clear invalid fds and send a signal
+		// to the parent process indicating that initialization is complete.
+		if err := upg.Ready(); err != nil {
+			apm.Logger.Error(context.TODO(), "goapm tableflip ready failed", err, map[string]any{"name": infra.Name})
+		} else {
+			apm.Logger.Info(context.TODO(), "goapm tableflip ready success", map[string]any{"name": infra.Name})
+		}
+		<-upg.Exit()
+	}
+
 	// close the components in the reverse order of the creation
 	for i := len(infra.closeFuncs) - 1; i >= 0; i-- {
 		infra.closeFuncs[i]()
