@@ -91,5 +91,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/gorm v1.25.12
-	mosn.io/holmes v1.1.0
+	mosn.io/holmes v1.0.2
 )

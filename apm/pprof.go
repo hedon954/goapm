@@ -3,6 +3,7 @@ package apm
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/gops/agent"
 	"mosn.io/holmes"
@@ -20,12 +21,17 @@ type AutoPProfOpt struct {
 
 type autoPProfReporter struct{}
 
-func (a *autoPProfReporter) Report(pType string, buf []byte, reason, eventID string) error {
+func (a *autoPProfReporter) Report(
+	pType string, filename string, reason holmes.ReasonType, eventID string, sampleTime time.Time, pprofBytes []byte,
+	scene holmes.Scene) error {
 	Logger.Error(context.TODO(), "homesGen", errors.New("auto record running state failed"),
 		map[string]any{
-			"pType":   pType,
-			"reason":  reason,
-			"eventID": eventID,
+			"pType":       pType,
+			"filename":    filename,
+			"reason":      reason,
+			"event_id":    eventID,
+			"simple_time": sampleTime.Format(time.RFC3339),
+			"scene":       scene,
 		},
 	)
 	return nil

@@ -921,8 +921,8 @@ launchpad.net/xmlpath v0.0.0-20130614043138-000000000004/go.mod h1:vqyExLOM3qBx7
 mosn.io/api v0.0.0-20210204052134-5b9a826795fd/go.mod h1:TBv4bz2f2RbpgdohbVAFRFVOoN8YyEUiLH3jAh752Qc=
 mosn.io/api v1.6.0 h1:V1nY3vHrI2pGXBF8dJi1ER+uHb1UxMFx/Z8E4tOvrbU=
 mosn.io/api v1.6.0/go.mod h1:mJX2oRJkrXjLN6hY1Wwrlxj0F+RqEPOMhbf2WhZO+VY=
-mosn.io/holmes v1.1.0 h1:FZ7slqsSHYGijYXzseqC3Zr2GfeGCIlHzSLgHmK/FE0=
-mosn.io/holmes v1.1.0/go.mod h1:pZjPamcZk4Z16xlZySG1rU9psLUCOx6MVNuj/3bfkEk=
+mosn.io/holmes v1.0.2 h1:veS3ZeRqMvXS1UykgaOKWwq08dScDRsUDmHK2Si91wA=
+mosn.io/holmes v1.0.2/go.mod h1:pZjPamcZk4Z16xlZySG1rU9psLUCOx6MVNuj/3bfkEk=
 mosn.io/pkg v0.0.0-20211217101631-d914102d1baf/go.mod h1:tK3Vbw6CcVeJ9H/BGjJ1wn6hRXt4Oxjfq1+gkOM0zG8=
 mosn.io/pkg v1.6.0 h1:R+T344PEp7CauQvXEitDJTXQ0bIeOhLwnaey9qwN4Fs=
 mosn.io/pkg v1.6.0/go.mod h1:/EptiefKMKBRvrveNPYEAAgthCTSme52sLMlBXBIBm8=
