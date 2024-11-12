@@ -80,11 +80,25 @@ func WithTableflip(opts tableflip.Options, sigs ...os.Signal) InfraOption {
 		sigs = []os.Signal{syscall.SIGUSR2}
 	}
 
-	return func(infra *Infra) {
-		upg, err := tableflip.New(opts)
-		if err != nil {
-			panic(fmt.Errorf("failed to create goapm tableflip: %w", err))
+	upg, err := tableflip.New(opts)
+	if err != nil {
+		panic(fmt.Errorf("failed to create goapm tableflip: %w", err))
+	}
+
+	// listen the SIGUSR2 signal to trigger the process restart
+	go func() {
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, sigs...)
+		for s := range sig {
+			if err := upg.Upgrade(); err != nil {
+				apm.Logger.Error(context.TODO(), "goapm tableflip upgrade failed", err, map[string]any{
+					"signal": s.String(),
+				})
+			}
 		}
+	}()
+
+	return func(infra *Infra) {
 		infra.upg = upg
 		infra.closeFuncs = append([]func(){
 			func() {
@@ -92,20 +106,6 @@ func WithTableflip(opts tableflip.Options, sigs ...os.Signal) InfraOption {
 				apm.Logger.Info(context.TODO(), "goapm tableflip stopped", map[string]any{"name": infra.Name})
 			},
 		}, infra.closeFuncs...) // tableflip should be the last one to be closed
-
-		// listen the SIGUSR2 signal to trigger the process restart
-		go func() {
-			sig := make(chan os.Signal, 1)
-			signal.Notify(sig, sigs...)
-			for s := range sig {
-				if err := upg.Upgrade(); err != nil {
-					apm.Logger.Error(context.TODO(), "goapm tableflip upgrade failed", err, map[string]any{
-						"name":   infra.Name,
-						"signal": s.String(),
-					})
-				}
-			}
-		}()
 	}
 }
 
