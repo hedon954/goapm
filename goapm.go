@@ -118,12 +118,12 @@ func WithMySQL(name, addr string) InfraOption {
 		}
 		db, err := apm.NewMySQL(name, addr)
 		if err != nil {
-			panic(fmt.Errorf("failed to create goapm mysql db: %w", err))
+			panic(fmt.Errorf("failed to create goapm mysql db[%s]: %w", name, err))
 		}
 		infra.mysqls[name] = db
 		infra.closeFuncs = append(infra.closeFuncs, func() {
 			_ = db.Close()
-			apm.Logger.Info(context.TODO(), "goapm mysql db closed", map[string]any{"name": name})
+			apm.Logger.Info(context.TODO(), "goapm mysql db[%s] closed", map[string]any{"name": name})
 		})
 	}
 }
@@ -137,14 +137,14 @@ func WithGorm(name, addr string) InfraOption {
 		}
 		db, err := apm.NewGorm(name, addr)
 		if err != nil {
-			panic(fmt.Errorf("failed to create goapm gorm db: %w", err))
+			panic(fmt.Errorf("failed to create goapm gorm db[%s]: %w", name, err))
 		}
 		infra.gorms[name] = db
 		infra.closeFuncs = append(infra.closeFuncs, func() {
 			d, _ := db.DB()
 			if d != nil {
 				_ = d.Close()
-				apm.Logger.Info(context.TODO(), "goapm gorm db closed", map[string]any{"name": name})
+				apm.Logger.Info(context.TODO(), "goapm gorm db[%s] closed", map[string]any{"name": name})
 			}
 		})
 	}
@@ -159,12 +159,12 @@ func WithRedisV6(name, addr, password string, db ...int) InfraOption {
 		}
 		client, err := apm.NewRedisV6(name, addr, password, db...)
 		if err != nil {
-			panic(fmt.Errorf("failed to create goapm redis v6 client: %w", err))
+			panic(fmt.Errorf("failed to create goapm redis v6 client[%s]: %w", name, err))
 		}
 		infra.redisV6s[name] = client
 		infra.closeFuncs = append(infra.closeFuncs, func() {
 			_ = client.Close()
-			apm.Logger.Info(context.TODO(), "goapm redis v6 client closed", map[string]any{"name": name})
+			apm.Logger.Info(context.TODO(), "goapm redis v6 client[%s] closed", map[string]any{"name": name})
 		})
 	}
 }
@@ -178,12 +178,12 @@ func WithRedisV9(name, addr, password string, db ...int) InfraOption {
 		}
 		client, err := apm.NewRedisV9(name, addr, password, db...)
 		if err != nil {
-			panic(fmt.Errorf("failed to create goapm redis v9 client: %w", err))
+			panic(fmt.Errorf("failed to create goapm redis v9 client[%s]: %w", name, err))
 		}
 		infra.redisV9s[name] = client
 		infra.closeFuncs = append(infra.closeFuncs, func() {
 			_ = client.Close()
-			apm.Logger.Info(context.TODO(), "goapm redis v9 client closed", map[string]any{"name": name})
+			apm.Logger.Info(context.TODO(), "goapm redis v9 client[%s] closed", map[string]any{"name": name})
 		})
 	}
 }
