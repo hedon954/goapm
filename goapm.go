@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
 	"mosn.io/holmes"
+
 	// import this package to fix the issue: https://github.com/open-telemetry/opentelemetry-collector/issues/10476
 	// since we need to specify the version of google.golang.org/genproto, but we do not use it in the code, so we need to import it to avoid deleting it by the go mod tidy command
 	_ "google.golang.org/genproto/protobuf/api"
@@ -40,10 +41,14 @@ type Infra struct {
 	// Upgrader is the tableflip for the infra,
 	upg *tableflip.Upgrader
 
+	// redisV6 holds the redis v6 clients created by WithRedisV6.
 	redisV6s map[string]*apm.RedisV6
+	// redisV9 holds the redis v9 clients created by WithRedisV9.
 	redisV9s map[string]*redis.Client
-	mysqls   map[string]*sql.DB
-	gorms    map[string]*gorm.DB
+	// mysqls holds the mysql db clients created by WithMySQL.
+	mysqls map[string]*sql.DB
+	// gorms holds the gorm db clients created by WithGorm.
+	gorms map[string]*gorm.DB
 
 	// closeFuncs holds the functions to close the infra.
 	// It should be closed in the reverse order of the creation.
