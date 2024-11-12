@@ -132,7 +132,7 @@ func WithMySQL(name, addr string) InfraOption {
 // name is the business name of the db, and addr is the address of the db.
 func WithGorm(name, addr string) InfraOption {
 	return func(infra *Infra) {
-		if infra.mysqls[name] != nil {
+		if infra.gorms[name] != nil {
 			panic(fmt.Errorf("goapm gorm db already exists: %s", name))
 		}
 		db, err := apm.NewGorm(name, addr)
