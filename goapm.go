@@ -9,8 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	// so we need to import it to avoid deleting it by the go mod tidy command
-
 	"github.com/cloudflare/tableflip"
 	"github.com/gin-gonic/gin"
 	redisv6 "github.com/go-redis/redis"
@@ -23,9 +21,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
 	"mosn.io/holmes"
-
 	// import this package to fix the issue: https://github.com/open-telemetry/opentelemetry-collector/issues/10476
-	// since we need to specify the version of google.golang.org/genproto, but we do not use it in the code,
+	// since we need to specify the version of google.golang.org/genproto, but we do not use it in the code, so we need to import it to avoid deleting it by the go mod tidy command
 	_ "google.golang.org/genproto/protobuf/api"
 
 	"github.com/hedon954/goapm/apm"
@@ -271,6 +268,34 @@ func (infra *Infra) AppendCloser(fn func()) {
 // PrependCloser prepends a closer to the infra.
 func (infra *Infra) PrependCloser(fn func()) {
 	infra.closeFuncs = append([]func(){fn}, infra.closeFuncs...)
+}
+
+// RangeSqlDB ranges the sql.DB of the infra.
+func (infra *Infra) RangeSqlDB(fn func(name string, db *sql.DB)) {
+	for name, db := range infra.mysqls {
+		fn(name, db)
+	}
+}
+
+// RangeGormDB ranges the gorm.DB of the infra.
+func (infra *Infra) RangeGormDB(fn func(name string, db *gorm.DB)) {
+	for name, db := range infra.gorms {
+		fn(name, db)
+	}
+}
+
+// RangeRedisV6 ranges the redis v6 client of the infra.
+func (infra *Infra) RangeRedisV6(fn func(name string, client *apm.RedisV6)) {
+	for name, client := range infra.redisV6s {
+		fn(name, client)
+	}
+}
+
+// RangeRedisV9 ranges the redis v9 client of the infra.
+func (infra *Infra) RangeRedisV9(fn func(name string, client *redis.Client)) {
+	for name, client := range infra.redisV9s {
+		fn(name, client)
+	}
 }
 
 // NewHTTPServer creates a new http server with the given address.
