@@ -130,10 +130,6 @@ func WithMySQL(name, addr string) InfraOption {
 			panic(fmt.Errorf("failed to create goapm mysql db[%s]: %w", name, err))
 		}
 		infra.mysqls[name] = db
-		infra.closeFuncs = append(infra.closeFuncs, func() {
-			_ = db.Close()
-			apm.Logger.Info(context.TODO(), "goapm mysql db[%s] closed", map[string]any{"name": name})
-		})
 	}
 }
 
@@ -149,13 +145,6 @@ func WithGorm(name, addr string) InfraOption {
 			panic(fmt.Errorf("failed to create goapm gorm db[%s]: %w", name, err))
 		}
 		infra.gorms[name] = db
-		infra.closeFuncs = append(infra.closeFuncs, func() {
-			d, _ := db.DB()
-			if d != nil {
-				_ = d.Close()
-				apm.Logger.Info(context.TODO(), "goapm gorm db[%s] closed", map[string]any{"name": name})
-			}
-		})
 	}
 }
 
@@ -172,10 +161,6 @@ func WithRedisV6(name string, opts *redisv6.Options) InfraOption {
 			panic(fmt.Errorf("failed to create goapm redis v6 client[%s]: %w", name, err))
 		}
 		infra.redisV6s[name] = client
-		infra.closeFuncs = append(infra.closeFuncs, func() {
-			_ = client.Close()
-			apm.Logger.Info(context.TODO(), "goapm redis v6 client[%s] closed", map[string]any{"name": name})
-		})
 	}
 }
 
@@ -192,10 +177,6 @@ func WithRedisV9(name string, opts *redis.Options) InfraOption {
 			panic(fmt.Errorf("failed to create goapm redis v9 client[%s]: %w", name, err))
 		}
 		infra.redisV9s[name] = client
-		infra.closeFuncs = append(infra.closeFuncs, func() {
-			_ = client.Close()
-			apm.Logger.Info(context.TODO(), "goapm redis v9 client[%s] closed", map[string]any{"name": name})
-		})
 	}
 }
 
@@ -352,6 +333,30 @@ func (infra *Infra) Stop() {
 	// close the components in the reverse order of the creation
 	for i := len(infra.closeFuncs) - 1; i >= 0; i-- {
 		infra.closeFuncs[i]()
+	}
+
+	// close redis
+	for name, client := range infra.redisV6s {
+		_ = client.Close()
+		apm.Logger.Info(context.TODO(), fmt.Sprintf("goapm redis v6 client[%s] closed", name), nil)
+	}
+	for name, client := range infra.redisV9s {
+		_ = client.Close()
+		apm.Logger.Info(context.TODO(), fmt.Sprintf("goapm redis v9 client[%s] closed", name), nil)
+	}
+
+	// close sql.DB
+	for name, db := range infra.mysqls {
+		_ = db.Close()
+		apm.Logger.Info(context.TODO(), fmt.Sprintf("goapm mysql sql.DB[%s] closed", name), nil)
+	}
+	// close gorm
+	for name, db := range infra.gorms {
+		d, _ := db.DB()
+		if d != nil {
+			_ = d.Close()
+			apm.Logger.Info(context.TODO(), fmt.Sprintf("goapm gorm db[%s] closed", name), nil)
+		}
 	}
 
 	apm.Logger.Info(context.TODO(), "goapm infra finished stopping", map[string]any{
