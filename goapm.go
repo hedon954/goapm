@@ -4,10 +4,16 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
+	"github.com/cloudflare/tableflip"
+	"github.com/gin-gonic/gin"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -25,16 +31,22 @@ import (
 
 // Infra is an infrastructure manager for goapm.
 // It is recommended to create a single instance of Infra and share it across the application.
+// TODO: add a print function to print the infra's components and closers.
 type Infra struct {
+	// Name is the business name of the infra.
+	Name string
 	// Tracer is the tracer for the infra,
 	Tracer trace.Tracer
-	Name   string
+	// Upgrader is the tableflip for the infra,
+	upg *tableflip.Upgrader
 
 	redisV6s map[string]*apm.RedisV6
 	redisV9s map[string]*redis.Client
 	mysqls   map[string]*sql.DB
 	gorms    map[string]*gorm.DB
 
+	// closeFuncs holds the functions to close the infra.
+	// It should be closed in the reverse order of the creation.
 	closeFuncs []func()
 }
 
@@ -56,6 +68,45 @@ func NewInfra(name string, opts ...InfraOption) *Infra {
 		opt(infra)
 	}
 	return infra
+}
+
+// WithTableflip creates a new tableflip and adds it to the infra.
+// The tableflip is used to support graceful restart.
+// If the tableflip is created, the infra will listen the ports with it for http and rpc servers.
+// NOTE: we recommend that this should be the first option to be called.
+func WithTableflip(opts tableflip.Options, sigs ...os.Signal) InfraOption {
+	// default signal is SIGUSR2
+	if len(sigs) == 0 {
+		sigs = []os.Signal{syscall.SIGUSR2}
+	}
+
+	return func(infra *Infra) {
+		upg, err := tableflip.New(opts)
+		if err != nil {
+			panic(fmt.Errorf("failed to create goapm tableflip: %w", err))
+		}
+		infra.upg = upg
+		infra.closeFuncs = append([]func(){
+			func() {
+				upg.Stop()
+				apm.Logger.Info(context.TODO(), "goapm tableflip stopped", map[string]any{"name": infra.Name})
+			},
+		}, infra.closeFuncs...) // tableflip should be the last one to be closed
+
+		// listen the SIGUSR2 signal to trigger the process restart
+		go func() {
+			sig := make(chan os.Signal, 1)
+			signal.Notify(sig, sigs...)
+			for s := range sig {
+				if err := upg.Upgrade(); err != nil {
+					apm.Logger.Error(context.TODO(), "goapm tableflip upgrade failed", err, map[string]any{
+						"name":   infra.Name,
+						"signal": s.String(),
+					})
+				}
+			}
+		}()
+	}
 }
 
 // WithMySQL creates a new mysql db and adds it to the infra.
@@ -193,6 +244,13 @@ func WithRotateLog(path string, opts ...rotatelogs.Option) InfraOption {
 	}
 }
 
+// WithCloser adds a closer to the infra.
+func WithCloser(fn func()) InfraOption {
+	return func(infra *Infra) {
+		infra.closeFuncs = append(infra.closeFuncs, fn)
+	}
+}
+
 // MySQL returns the mysql db client with the given name.
 func (infra *Infra) MySQL(name string) *sql.DB {
 	return infra.mysqls[name]
@@ -218,10 +276,71 @@ func (infra *Infra) AppendCloser(fn func()) {
 	infra.closeFuncs = append(infra.closeFuncs, fn)
 }
 
+// PrependCloser prepends a closer to the infra.
+func (infra *Infra) PrependCloser(fn func()) {
+	infra.closeFuncs = append([]func(){fn}, infra.closeFuncs...)
+}
+
+// NewHTTPServer creates a new http server with the given address.
+// If the tableflip is created, the server will listen on the address with the tableflip.
+// Otherwise, it will listen on the address directly.
+func (infra *Infra) NewHTTPServer(addr string) *apm.HTTPServer {
+	if infra.upg == nil {
+		return apm.NewHTTPServer(addr)
+	}
+	listener, err := infra.upg.Listen("tcp", addr)
+	if err != nil {
+		panic(fmt.Errorf("failed to listen goapm http server with tableflip: %w", err))
+	}
+	return apm.NewHTTPServer2(listener)
+}
+
+// NewGin creates a new gin engine with otel tracing and metrics.
+// It will automatically add the otel tracing and metrics middleware to the engine.
+// If metricsAuth is not nil, it will add a metrics handler with the given auth middleware.
+func (infra *Infra) NewGin(metricsAuth gin.HandlerFunc, opts ...gin.OptionFunc) *gin.Engine {
+	res := gin.New(opts...)
+	res.Use(apm.GinOtel())
+
+	metricsHandler := gin.WrapH(
+		promhttp.HandlerFor(
+			apm.MetricsReg,
+			promhttp.HandlerOpts{Registry: apm.MetricsReg},
+		),
+	)
+
+	if metricsAuth != nil {
+		res.GET("/metrics", metricsAuth, metricsHandler)
+	} else {
+		res.GET("/metrics", metricsHandler)
+	}
+
+	return res
+}
+
+// NewGRPCServer creates a new grpc server with the given address.
+// If the tableflip is created, the server will listen on the address with the tableflip.
+func (infra *Infra) NewGRPCServer(addr string) *apm.GrpcServer {
+	if infra.upg == nil {
+		return apm.NewGrpcServer(addr)
+	}
+	listener, err := infra.upg.Listen("tcp", addr)
+	if err != nil {
+		panic(fmt.Errorf("failed to listen goapm grpc server with tableflip: %w", err))
+	}
+	return apm.NewGrpcServer2(listener)
+}
+
+// Tableflip returns the tableflip of the infra.
+func (infra *Infra) Tableflip() *tableflip.Upgrader {
+	return infra.upg
+}
+
 // Stop stops the infra.
 func (infra *Infra) Stop() {
-	for _, fn := range infra.closeFuncs {
-		fn()
+	// close the components in the reverse order of the creation
+	for i := len(infra.closeFuncs) - 1; i >= 0; i-- {
+		infra.closeFuncs[i]()
 	}
 
 	apm.Logger.Info(context.TODO(), "goapm infra finished stopping", map[string]any{

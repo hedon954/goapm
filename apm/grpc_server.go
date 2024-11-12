@@ -24,11 +24,21 @@ const (
 
 // GrpcServer is a wrapper of grpc.Server.
 type GrpcServer struct {
-	addr string
 	*grpc.Server
+	listener net.Listener
 }
 
+// NewGrpcServer creates a new grpc server with the given address.
 func NewGrpcServer(addr string, opts ...grpc.ServerOption) *GrpcServer {
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		panic(fmt.Errorf("failed to listen goapm rpc server: %w", err))
+	}
+	return NewGrpcServer2(listener, opts...)
+}
+
+// NewGrpcServer2 creates a new grpc server with the given listener.
+func NewGrpcServer2(listener net.Listener, opts ...grpc.ServerOption) *GrpcServer {
 	options := []grpc.ServerOption{
 		grpc.UnaryInterceptor(unaryServerInterceptor()),
 	}
@@ -36,21 +46,19 @@ func NewGrpcServer(addr string, opts ...grpc.ServerOption) *GrpcServer {
 
 	server := grpc.NewServer(options...)
 	return &GrpcServer{
-		addr:   addr,
-		Server: server,
+		listener: listener,
+		Server:   server,
 	}
 }
 
 func (s *GrpcServer) Start() {
-	listener, err := net.Listen("tcp", s.addr)
-	if err != nil {
-		panic("GRPC server listen failed: " + err.Error())
-	}
-	s.addr = listener.Addr().String()
-
 	go func() {
-		log.Printf("[%s][%s] starting grpc server on: %s\n", internal.BuildInfo.AppName(), internal.BuildInfo.Hostname(), s.addr)
-		if err := s.Server.Serve(listener); err != nil {
+		log.Printf("[%s][%s] starting grpc server on: %s\n",
+			internal.BuildInfo.AppName(),
+			internal.BuildInfo.Hostname(),
+			s.listener.Addr().String(),
+		)
+		if err := s.Server.Serve(s.listener); err != nil {
 			panic("GRPC server serve failed: " + err.Error())
 		}
 	}()

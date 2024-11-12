@@ -16,6 +16,7 @@ func TestHTTPServer_Handle(t *testing.T) {
 		}
 	}))
 	server.Start()
+	defer server.Close()
 	for {
 		time.Sleep(10 * time.Millisecond)
 		resp, err := http.Get("http://127.0.0.1:12345/")
@@ -29,5 +30,4 @@ func TestHTTPServer_Handle(t *testing.T) {
 			break
 		}
 	}
-	server.Close()
 }

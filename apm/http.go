@@ -3,6 +3,7 @@ package apm
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"runtime/debug"
 	"strconv"
@@ -26,21 +27,33 @@ const (
 type HTTPServer struct {
 	mux *http.ServeMux
 	*http.Server
-	tracer trace.Tracer
+	tracer   trace.Tracer
+	listener net.Listener
 }
 
 // NewHTTPServer creates a new HTTPServer,
-// which is a wrapper around http.Server that adds tracing and metrics to the server.
+// it is a wrapper around http.Server that adds tracing and metrics to the server.
 func NewHTTPServer(addr string) *HTTPServer {
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		panic(fmt.Errorf("failed to listen goapm http server: %w", err))
+	}
+
+	return NewHTTPServer2(listener)
+}
+
+// NewHTTPServer2 creates a new HTTPServer with a given listener,
+// it is a wrapper around http.Server that adds tracing and metrics to the server.
+func NewHTTPServer2(listener net.Listener) *HTTPServer {
 	mux := http.NewServeMux()
 	srv := &HTTPServer{
 		tracer: otel.Tracer(httpTracerName),
 		mux:    mux,
 		Server: &http.Server{
-			Addr:              addr,
 			Handler:           mux,
 			ReadHeaderTimeout: 30 * time.Second, //nolint:mnd
 		},
+		listener: listener,
 	}
 
 	srv.Handle("/metrics", promhttp.HandlerFor(MetricsReg, promhttp.HandlerOpts{
@@ -57,7 +70,8 @@ func NewHTTPServer(addr string) *HTTPServer {
 func (s *HTTPServer) Start() {
 	go func() {
 		Logger.Info(context.Background(), "starting http server", nil)
-		if err := s.Server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		err := s.Server.Serve(s.listener)
+		if err != nil && err != http.ErrServerClosed {
 			Logger.Error(context.Background(), "failed to start http server", err, nil)
 		}
 	}()

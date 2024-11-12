@@ -2,6 +2,7 @@ package apm
 
 import (
 	"io"
+	"net"
 	"net/http"
 	"testing"
 	"time"
@@ -21,15 +22,20 @@ func TestGinServer_Handle(t *testing.T) {
 		c.String(http.StatusOK, "Hello, World!")
 	})
 
+	listener, err := net.Listen("tcp", ":") //nolint:gosec
+	if err != nil {
+		panic(err)
+	}
+
 	go func() {
-		if err := router.Run(":12345"); err != nil {
+		if err := router.RunListener(listener); err != nil {
 			panic(err)
 		}
 	}()
 
 	for {
 		time.Sleep(10 * time.Millisecond)
-		resp, err := http.Get("http://127.0.0.1:12345/")
+		resp, err := http.Get("http://" + listener.Addr().String() + "/")
 		if err != nil {
 			continue
 		}
