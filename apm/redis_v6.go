@@ -24,16 +24,8 @@ type RedisV6 struct {
 
 // NewRedisV6 creates a new redis client with otel tracing enabled.
 // name is the business name of the redis client, it will be used in the span name.
-func NewRedisV6(name, addr, password string, db ...int) (*RedisV6, error) {
-	dbIndex := 0
-	if len(db) > 0 {
-		dbIndex = db[0]
-	}
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     addr,
-		DB:       dbIndex,
-		Password: password,
-	})
+func NewRedisV6(name string, opts *redis.Options) (*RedisV6, error) {
+	rdb := redis.NewClient(opts)
 
 	if err := rdb.Ping().Err(); err != nil {
 		return nil, err

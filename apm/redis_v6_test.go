@@ -4,11 +4,15 @@ import (
 	"context"
 	"testing"
 
+	"github.com/go-redis/redis"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRedisV6(t *testing.T) {
-	client, err := NewRedisV6("test", "127.0.0.1:6379", "", 10)
+	client, err := NewRedisV6("test", &redis.Options{
+		Addr: "127.0.0.1:6379",
+		DB:   10,
+	})
 	assert.Nil(t, err)
 	defer client.Close()
 

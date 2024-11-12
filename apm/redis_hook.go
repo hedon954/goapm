@@ -18,16 +18,8 @@ const (
 
 // NewRedisV9 creates a new redis client with tracing.
 // name is the business name of the redis client, it will be used in the span name.
-func NewRedisV9(name, addr, password string, db ...int) (*redis.Client, error) {
-	dbIndex := 0
-	if len(db) > 0 {
-		dbIndex = db[0]
-	}
-	client := redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: password,
-		DB:       dbIndex,
-	})
+func NewRedisV9(name string, opts *redis.Options) (*redis.Client, error) {
+	client := redis.NewClient(opts)
 	client.AddHook(&redisHook{name})
 
 	res, err := client.Ping(context.Background()).Result()

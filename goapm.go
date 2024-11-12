@@ -8,10 +8,12 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
 	// so we need to import it to avoid deleting it by the go mod tidy command
 
 	"github.com/cloudflare/tableflip"
 	"github.com/gin-gonic/gin"
+	redisv6 "github.com/go-redis/redis"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -21,6 +23,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
 	"mosn.io/holmes"
+
 	// import this package to fix the issue: https://github.com/open-telemetry/opentelemetry-collector/issues/10476
 	// since we need to specify the version of google.golang.org/genproto, but we do not use it in the code,
 	_ "google.golang.org/genproto/protobuf/api"
@@ -157,13 +160,14 @@ func WithGorm(name, addr string) InfraOption {
 }
 
 // WithRedisV6 creates a new redis v6 client and adds it to the infra.
-// name is the business name of the redis, and addr is the address of the redis.
-func WithRedisV6(name, addr, password string, db ...int) InfraOption {
+// name is the business name of the redis, and opts is the options of the redis.
+// nolint:dupl
+func WithRedisV6(name string, opts *redisv6.Options) InfraOption {
 	return func(infra *Infra) {
 		if infra.redisV6s[name] != nil {
 			panic(fmt.Errorf("goapm redis v6 client already exists: %s", name))
 		}
-		client, err := apm.NewRedisV6(name, addr, password, db...)
+		client, err := apm.NewRedisV6(name, opts)
 		if err != nil {
 			panic(fmt.Errorf("failed to create goapm redis v6 client[%s]: %w", name, err))
 		}
@@ -176,13 +180,14 @@ func WithRedisV6(name, addr, password string, db ...int) InfraOption {
 }
 
 // WithRedisV9 creates a new redis v9 client and adds it to the infra.
-// name is the business name of the redis, and addr is the address of the redis.
-func WithRedisV9(name, addr, password string, db ...int) InfraOption {
+// name is the business name of the redis, and opts is the options of the redis.
+// nolint:dupl
+func WithRedisV9(name string, opts *redis.Options) InfraOption {
 	return func(infra *Infra) {
 		if infra.redisV9s[name] != nil {
 			panic(fmt.Errorf("goapm redis v9 client already exists: %s", name))
 		}
-		client, err := apm.NewRedisV9(name, addr, password, db...)
+		client, err := apm.NewRedisV9(name, opts)
 		if err != nil {
 			panic(fmt.Errorf("failed to create goapm redis v9 client[%s]: %w", name, err))
 		}
