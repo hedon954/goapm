@@ -29,7 +29,7 @@
 
 
 ## Architecture
-![architecture](https://hedonspace.oss-cn-beijing.aliyuncs.com/img/image-20241031195051363.png)
+![architecture](./assets/architecture.png)
 
 
 

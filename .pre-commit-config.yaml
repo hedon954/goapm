@@ -33,3 +33,5 @@ repos:
         language: golang
         files: \.*$
         pass_filenames: false
+
+exclude: assets/
