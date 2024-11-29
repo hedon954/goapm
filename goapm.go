@@ -77,6 +77,12 @@ func NewInfra(name string, opts ...InfraOption) *Infra {
 	return infra
 }
 
+// Hostname returns the hostname of the machine running the application.
+func (infra *Infra) Hostname() string {
+	return internal.BuildInfo.Hostname()
+}
+
+// FullName returns the full name of the infra, it is the combination of the infra name and the hostname.
 func (infra *Infra) FullName() string {
 	return fmt.Sprintf("[%s][%s]", infra.Name, internal.BuildInfo.Hostname())
 }
