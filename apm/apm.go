@@ -2,6 +2,7 @@ package apm
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -10,51 +11,86 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/encoding/gzip"
 
 	"github.com/hedon954/goapm/internal"
 )
 
+type apmBuilder struct {
+	res       *resource.Resource
+	grpcToken string
+}
+
+// ApmOption is the option for the apm.
+type ApmOption func(b *apmBuilder)
+
+// WithResource sets the resource for the apm, if not set, a default resource will be created.
+func WithResource(res *resource.Resource) ApmOption {
+	return func(b *apmBuilder) {
+		b.res = res
+	}
+}
+
+// WithGRPCAuthToken sets the grpc auth token for the apm, it is optional.
+func WithGRPCAuthToken(token string) ApmOption {
+	return func(b *apmBuilder) {
+		b.grpcToken = token
+	}
+}
+
 // NewAPM creates a new APM component, which is a wrapper of opentelemetry.
-func NewAPM(otelEndpoint string) (closeFunc func(), err error) {
+func NewAPM(otelEndpoint string, opts ...ApmOption) (closeFunc func(), err error) {
 	ctx := context.Background()
 
-	// setup a resource
-	res, err := resource.New(ctx,
-		resource.WithAttributes(semconv.ServiceName(
-			internal.BuildInfo.AppName(),
-		)),
-	)
-	if err != nil {
-		return nil, err
+	b := &apmBuilder{}
+	for _, opt := range opts {
+		opt(b)
 	}
 
-	// connect to otel collector
-	conn, err := grpc.NewClient(otelEndpoint,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	if err != nil {
-		return nil, err
+	if b.res == nil {
+		// setup a resource
+		res, err := resource.New(ctx,
+			resource.WithHost(),
+			resource.WithProcess(),
+			resource.WithTelemetrySDK(),
+			resource.WithAttributes(semconv.ServiceName(
+				internal.BuildInfo.AppName(),
+			)),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create otel resource: %w", err)
+		}
+		b.res = res
 	}
 
 	// setup a trace exporter
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
-	traceExporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithGRPCConn(conn))
+	traceExporter, err := otlptracegrpc.New(ctx,
+		otlptracegrpc.WithInsecure(),
+		otlptracegrpc.WithEndpoint(otelEndpoint),
+		otlptracegrpc.WithHeaders(map[string]string{
+			"Authentication": b.grpcToken,
+		}),
+		otlptracegrpc.WithCompressor(gzip.Name),
+	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create otel trace exporter: %w", err)
 	}
 	bsp := sdktrace.NewBatchSpanProcessor(traceExporter)
 	traceProvider := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
-		sdktrace.WithResource(res),
+		sdktrace.WithResource(b.res),
 		sdktrace.WithSpanProcessor(bsp),
 	)
 	otel.SetTracerProvider(traceProvider)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
 	return func() {
-		_ = traceProvider.Shutdown(context.Background())
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel()
+		if err := traceProvider.Shutdown(ctx); err != nil {
+			otel.Handle(err)
+		}
 	}, nil
 }

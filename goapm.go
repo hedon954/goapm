@@ -211,9 +211,9 @@ func WithAutoPProf(autoPProfOpts *apm.AutoPProfOpt, opts ...holmes.Option) Infra
 }
 
 // WithAPM creates a new apm and adds it to the infra.
-func WithAPM(otelEndpoint string) InfraOption {
+func WithAPM(otelEndpoint string, opts ...apm.ApmOption) InfraOption {
 	return func(infra *Infra) {
-		closeFunc, err := apm.NewAPM(otelEndpoint)
+		closeFunc, err := apm.NewAPM(otelEndpoint, opts...)
 		if err != nil {
 			panic(fmt.Errorf("failed to create goapm apm: %w", err))
 		}
