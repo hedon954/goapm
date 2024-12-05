@@ -19,6 +19,7 @@ import (
 type apmBuilder struct {
 	res       *resource.Resource
 	grpcToken string
+	sampler   sdktrace.Sampler
 }
 
 // ApmOption is the option for the apm.
@@ -38,6 +39,13 @@ func WithGRPCAuthToken(token string) ApmOption {
 	}
 }
 
+// WithSampler sets the custom sampler for the apm, it is optional.
+func WithSampler(sampler sdktrace.Sampler) ApmOption {
+	return func(b *apmBuilder) {
+		b.sampler = sampler
+	}
+}
+
 // NewAPM creates a new APM component, which is a wrapper of opentelemetry.
 func NewAPM(otelEndpoint string, opts ...ApmOption) (closeFunc func(), err error) {
 	ctx := context.Background()
@@ -45,6 +53,10 @@ func NewAPM(otelEndpoint string, opts ...ApmOption) (closeFunc func(), err error
 	b := &apmBuilder{}
 	for _, opt := range opts {
 		opt(b)
+	}
+
+	if b.sampler == nil {
+		b.sampler = sdktrace.AlwaysSample()
 	}
 
 	if b.res == nil {
@@ -79,7 +91,7 @@ func NewAPM(otelEndpoint string, opts ...ApmOption) (closeFunc func(), err error
 	}
 	bsp := sdktrace.NewBatchSpanProcessor(traceExporter)
 	traceProvider := sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithSampler(b.sampler),
 		sdktrace.WithResource(b.res),
 		sdktrace.WithSpanProcessor(bsp),
 	)
