@@ -1,9 +1,9 @@
 package apm
 
 import (
+	"context"
 	"fmt"
 	"net/http"
-	"runtime/debug"
 	"strconv"
 	"time"
 
@@ -18,9 +18,26 @@ const (
 	ginTracerName = "goapm/gin"
 )
 
+type ginOtel struct {
+	panicHooks []func(ctx context.Context, panic any) (stop bool)
+}
+
+type GinOtelOption func(o *ginOtel)
+
+func WithPanicHook(hook func(ctx context.Context, panic any) (stop bool)) GinOtelOption {
+	return func(o *ginOtel) {
+		o.panicHooks = append(o.panicHooks, hook)
+	}
+}
+
 // GinOtel creates a Gin middleware for tracing, metrics and logging.
-func GinOtel() gin.HandlerFunc {
+func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 	tracer := otel.Tracer(ginTracerName)
+
+	o := &ginOtel{}
+	for _, opt := range opts {
+		opt(o)
+	}
 
 	return func(c *gin.Context) {
 		// metrics
@@ -37,21 +54,25 @@ func GinOtel() gin.HandlerFunc {
 		defer func() {
 			// panic recover
 			if err := recover(); err != nil {
-				span.SetAttributes(attribute.Bool("error", true))
+				span.SetAttributes(
+					attribute.Bool("error", true),
+					attribute.String("path", c.FullPath()),
+					attribute.String("method", c.Request.Method),
+					attribute.String("params", c.Request.Form.Encode()),
+				)
 				span.RecordError(
 					fmt.Errorf("%v", err),
 					trace.WithStackTrace(true),
 					trace.WithTimestamp(time.Now()),
 				)
-
-				// log
-				Logger.Error(ctx, "panic in gin http handler", fmt.Errorf("panic: %v", err), map[string]any{
-					"method": c.Request.Method,
-					"path":   c.FullPath(),
-					"params": c.Request.Form.Encode(),
-					"stack":  string(debug.Stack()),
-				})
 				c.AbortWithStatus(http.StatusInternalServerError)
+
+				// run panic hooks
+				for _, hook := range o.panicHooks {
+					if hook(ctx, err) {
+						break
+					}
+				}
 			}
 
 			// http response status code
