@@ -50,9 +50,9 @@ type Infra struct {
 	// gorms holds the gorm db clients created by WithGorm.
 	gorms map[string]*gorm.DB
 
-	// closeFuncs holds the functions to close the infra.
+	// deferFuncs holds the functions to close the infra.
 	// It should be closed in the reverse order of the creation.
-	closeFuncs []func()
+	deferFuncs []func()
 }
 
 // InfraOption is the option for Infra.
@@ -69,7 +69,7 @@ func NewInfra(name string, opts ...InfraOption) *Infra {
 		redisV9s:   make(map[string]*redis.Client),
 		mysqls:     make(map[string]*sql.DB),
 		gorms:      make(map[string]*gorm.DB),
-		closeFuncs: make([]func(), 0),
+		deferFuncs: make([]func(), 0),
 	}
 	for _, opt := range opts {
 		opt(infra)
@@ -117,12 +117,12 @@ func WithTableflip(opts tableflip.Options, sigs ...os.Signal) InfraOption {
 
 	return func(infra *Infra) {
 		infra.upg = upg
-		infra.closeFuncs = append([]func(){
+		infra.deferFuncs = append([]func(){
 			func() {
 				upg.Stop()
 				apm.Logger.Info(context.TODO(), "goapm tableflip stopped", map[string]any{"name": infra.Name})
 			},
-		}, infra.closeFuncs...) // tableflip should be the last one to be closed
+		}, infra.deferFuncs...) // tableflip should be the last one to be closed
 	}
 }
 
@@ -209,7 +209,7 @@ func WithAutoPProf(autoPProfOpts *apm.AutoPProfOpt, opts ...holmes.Option) Infra
 			"enable_mem":       autoPProfOpts.EnableMem,
 			"enable_goroutine": autoPProfOpts.EnableGoroutine,
 		})
-		infra.closeFuncs = append(infra.closeFuncs, func() {
+		infra.deferFuncs = append(infra.deferFuncs, func() {
 			h.Stop()
 			apm.Logger.Info(context.TODO(), "auto pprof stopped", nil)
 		})
@@ -223,7 +223,7 @@ func WithAPM(otelEndpoint string, opts ...apm.ApmOption) InfraOption {
 		if err != nil {
 			panic(fmt.Errorf("failed to create goapm apm: %w", err))
 		}
-		infra.closeFuncs = append(infra.closeFuncs, closeFunc)
+		infra.deferFuncs = append(infra.deferFuncs, closeFunc)
 	}
 }
 
@@ -247,7 +247,7 @@ func WithRotateLog(path string, opts ...rotatelogs.Option) InfraOption {
 // WithCloser adds a closer to the infra.
 func WithCloser(fn func()) InfraOption {
 	return func(infra *Infra) {
-		infra.closeFuncs = append(infra.closeFuncs, fn)
+		infra.deferFuncs = append(infra.deferFuncs, fn)
 	}
 }
 
@@ -271,14 +271,14 @@ func (infra *Infra) RedisV9(name string) *redis.Client {
 	return infra.redisV9s[name]
 }
 
-// AppendCloser appends a closer to the infra.
-func (infra *Infra) AppendCloser(fn func()) {
-	infra.closeFuncs = append(infra.closeFuncs, fn)
+// Defer appends a defer function to the infra.
+func (infra *Infra) Defer(fn func()) {
+	infra.deferFuncs = append(infra.deferFuncs, fn)
 }
 
-// PrependCloser prepends a closer to the infra.
-func (infra *Infra) PrependCloser(fn func()) {
-	infra.closeFuncs = append([]func(){fn}, infra.closeFuncs...)
+// PrependDefer prepends a defer function to the infra.
+func (infra *Infra) PrependDefer(fn func()) {
+	infra.deferFuncs = append([]func(){fn}, infra.deferFuncs...)
 }
 
 // RangeSqlDB ranges the sql.DB of the infra.
@@ -367,8 +367,8 @@ func (infra *Infra) Tableflip() *tableflip.Upgrader {
 // Stop stops the infra.
 func (infra *Infra) Stop() {
 	// close the components in the reverse order of the creation
-	for i := len(infra.closeFuncs) - 1; i >= 0; i-- {
-		infra.closeFuncs[i]()
+	for i := len(infra.deferFuncs) - 1; i >= 0; i-- {
+		infra.deferFuncs[i]()
 	}
 
 	// close redis
