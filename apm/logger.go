@@ -77,7 +77,12 @@ func (l *logrusTracerHook) Levels() []logrus.Level {
 }
 
 func (l *logrusTracerHook) Fire(entry *logrus.Entry) error {
-	if span := trace.SpanFromContext(entry.Context); span != nil {
+	if parentSpan := trace.SpanFromContext(entry.Context); parentSpan != nil {
+		_, span := parentSpan.TracerProvider().Tracer("error-logger").Start(
+			entry.Context, "log.error",
+		)
+		defer span.End()
+
 		entry.Data[traceID] = span.SpanContext().TraceID().String()
 		span.SetAttributes(attribute.Bool("error", true))
 		span.RecordError(getEntryError(entry), trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
