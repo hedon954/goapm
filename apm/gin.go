@@ -2,8 +2,10 @@ package apm
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -126,7 +128,7 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 			if recordResponse {
 				span.SetAttributes(
 					attribute.Bool("pinned", true),
-					attribute.String("http.request.params", c.Request.Form.Encode()),
+					attribute.String("http.request.params", formatRequestParams(c.Request.Form)),
 					attribute.String("http.response.body", blw.body.String()),
 				)
 			}
@@ -140,4 +142,15 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 		// handle request
 		c.Next()
 	}
+}
+
+func formatRequestParams(form url.Values) string {
+	param := make(map[string]string, len(form))
+	for k, v := range form {
+		if len(v) > 0 {
+			param[k] = v[0]
+		}
+	}
+	json, _ := json.Marshal(param)
+	return string(json)
 }
