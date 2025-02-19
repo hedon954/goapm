@@ -121,6 +121,7 @@ func getEntryError(entry *logrus.Entry) error {
 }
 
 // findCaller gets the business function where invoke logrus.Error()
+// nolint:gocritic
 func findCaller() string {
 	// github.com/hedon954/goapm/apm.(*logrusTracerHook).Fire
 	// github.com/sirupsen/logrus.LevelHooks.Fire
