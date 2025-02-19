@@ -7,13 +7,17 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/hedon954/goapm/internal"
 )
 
-const traceID = "trace_id"
+const (
+	traceID          = "trace_id"
+	logrusTracerName = "goapm/logrus"
+)
 
 func init() {
 	logrus.SetFormatter(&logrus.JSONFormatter{})
@@ -77,16 +81,17 @@ func (l *logrusTracerHook) Levels() []logrus.Level {
 }
 
 func (l *logrusTracerHook) Fire(entry *logrus.Entry) error {
-	if parentSpan := trace.SpanFromContext(entry.Context); parentSpan != nil {
-		_, span := parentSpan.TracerProvider().Tracer("error-logger").Start(
-			entry.Context, "log.error",
-		)
-		defer span.End()
-
-		entry.Data[traceID] = span.SpanContext().TraceID().String()
-		span.SetAttributes(attribute.Bool("error", true))
-		span.RecordError(getEntryError(entry), trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
+	spanCtx := trace.SpanContextFromContext(entry.Context)
+	if !spanCtx.IsValid() {
+		return nil
 	}
+
+	tracer := otel.Tracer(logrusTracerName)
+	_, span := tracer.Start(entry.Context, "log.error")
+	defer span.End()
+	entry.Data[traceID] = span.SpanContext().TraceID().String()
+	span.SetAttributes(attribute.Bool("error", true))
+	span.RecordError(getEntryError(entry), trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
 	return nil
 }
 
