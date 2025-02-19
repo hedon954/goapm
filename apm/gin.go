@@ -126,8 +126,8 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 			if recordResponse {
 				span.SetAttributes(
 					attribute.Bool("pinned", true),
+					attribute.String("http.request.params", c.Request.Form.Encode()),
 					attribute.String("http.response.body", blw.body.String()),
-					// TODO: record request body
 				)
 			}
 
