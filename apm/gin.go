@@ -2,7 +2,6 @@ package apm
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -30,13 +29,13 @@ func (w *bodyLogWriter) Write(b []byte) (int, error) {
 }
 
 type ginOtel struct {
-	panicHooks     []func(ctx context.Context, panic any) (stop bool)
+	panicHooks     []func(c *gin.Context, panic any) (stop bool)
 	recordResponse func(c *gin.Context) bool
 }
 
 type GinOtelOption func(o *ginOtel)
 
-func WithPanicHook(hook func(ctx context.Context, panic any) (stop bool)) GinOtelOption {
+func WithPanicHook(hook func(c *gin.Context, panic any) (stop bool)) GinOtelOption {
 	return func(o *ginOtel) {
 		o.panicHooks = append(o.panicHooks, hook)
 	}
@@ -99,7 +98,7 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 
 				// run panic hooks
 				for _, hook := range o.panicHooks {
-					if hook(ctx, err) {
+					if hook(c, err) {
 						break
 					}
 				}
