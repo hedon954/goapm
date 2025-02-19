@@ -1,6 +1,7 @@
 package apm
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -18,8 +19,19 @@ const (
 	ginTracerName = "goapm/gin"
 )
 
+type bodyLogWriter struct {
+	gin.ResponseWriter
+	body *bytes.Buffer
+}
+
+func (w *bodyLogWriter) Write(b []byte) (int, error) {
+	w.body.Write(b)
+	return w.ResponseWriter.Write(b)
+}
+
 type ginOtel struct {
-	panicHooks []func(ctx context.Context, panic any) (stop bool)
+	panicHooks     []func(ctx context.Context, panic any) (stop bool)
+	recordResponse func(c *gin.Context) bool
 }
 
 type GinOtelOption func(o *ginOtel)
@@ -27,6 +39,12 @@ type GinOtelOption func(o *ginOtel)
 func WithPanicHook(hook func(ctx context.Context, panic any) (stop bool)) GinOtelOption {
 	return func(o *ginOtel) {
 		o.panicHooks = append(o.panicHooks, hook)
+	}
+}
+
+func WithRecordResponse(recordResponse func(c *gin.Context) bool) GinOtelOption {
+	return func(o *ginOtel) {
+		o.recordResponse = recordResponse
 	}
 }
 
@@ -40,6 +58,18 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
+		// check if record response
+		recordResponse := false
+		var blw *bodyLogWriter
+		if o.recordResponse != nil && o.recordResponse(c) {
+			blw = &bodyLogWriter{
+				ResponseWriter: c.Writer,
+				body:           &bytes.Buffer{},
+			}
+			c.Writer = blw
+			recordResponse = true
+		}
+
 		// metrics
 		serverHandleCounter.WithLabelValues(MetricTypeHTTP, c.Request.Method+"."+c.FullPath(), "", "").Inc()
 
@@ -90,6 +120,14 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 				span.SetAttributes(
 					attribute.String("http.response.business_error_code", businessErrorCode),
 					attribute.String("http.response.business_error_msg", businessErrorMsg),
+				)
+			}
+
+			// record response
+			if recordResponse {
+				span.SetAttributes(
+					attribute.Bool("http.response.pinned", true),
+					attribute.String("http.response.body", blw.body.String()),
 				)
 			}
 
