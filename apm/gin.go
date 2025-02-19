@@ -2,13 +2,13 @@ package apm
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
 
+	"github.com/bytedance/sonic"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -151,6 +151,6 @@ func formatRequestParams(form url.Values) string {
 			param[k] = v[0]
 		}
 	}
-	json, _ := json.Marshal(param)
-	return string(json)
+	bs, _ := sonic.Marshal(param)
+	return string(bs)
 }
