@@ -108,9 +108,9 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 
 				span.SetAttributes(
 					attribute.Bool("error", true),
-					attribute.String("path", c.FullPath()),
-					attribute.String("method", c.Request.Method),
-					attribute.String("params", c.Request.Form.Encode()),
+					attribute.String("http.request.path", c.FullPath()),
+					attribute.String("http.request.method", c.Request.Method),
+					attribute.String("http.request.params", formatRequestParams(c.Request.Form)),
 				)
 				span.RecordError(
 					fmt.Errorf("%v", err),
@@ -149,12 +149,12 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 			if recordResponse {
 				span.SetAttributes(attribute.Bool("pinned", true))
 				if o.formatResponse != nil {
-					span.SetAttributes(attribute.String("response", o.formatResponse(c, blw.body)))
+					span.SetAttributes(attribute.String("http.response.body", o.formatResponse(c, blw.body)))
 				} else {
-					span.SetAttributes(attribute.String("response", blw.body.String()))
+					span.SetAttributes(attribute.String("http.response.body", blw.body.String()))
 				}
 				if !hasPanic {
-					span.SetAttributes(attribute.String("params", formatRequestParams(c.Request.Form)))
+					span.SetAttributes(attribute.String("http.request.params", formatRequestParams(c.Request.Form)))
 				}
 			}
 
