@@ -84,6 +84,7 @@ func (l *logrusTracerHook) Levels() []logrus.Level {
 	return []logrus.Level{logrus.ErrorLevel}
 }
 
+//nolint:gocritic
 func (l *logrusTracerHook) Fire(entry *logrus.Entry) error {
 	if entry.Context == nil {
 		return nil
