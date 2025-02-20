@@ -20,36 +20,46 @@ const (
 	ginTracerName = "goapm/gin"
 )
 
+// bodyLogWriter is a wrapper around gin.ResponseWriter that logs the response body.
+// It is used to record the response body when needed.
 type bodyLogWriter struct {
 	gin.ResponseWriter
 	body *bytes.Buffer
 }
 
+// Write writes the response body to the buffer before writing it to the response.
 func (w *bodyLogWriter) Write(b []byte) (int, error) {
 	w.body.Write(b)
 	return w.ResponseWriter.Write(b)
 }
 
+// ginOtel is the middleware for tracing, metrics and logging.
 type ginOtel struct {
 	panicHooks     []func(c *gin.Context, panic any) (stop bool)
 	recordResponse func(c *gin.Context) bool
 	formatResponse func(body *bytes.Buffer) string
 }
 
+// GinOtelOption is a function that configures the ginOtel middleware.
 type GinOtelOption func(o *ginOtel)
 
+// WithPanicHook sets a hook to be called when a panic occurs.
 func WithPanicHook(hook func(c *gin.Context, panic any) (stop bool)) GinOtelOption {
 	return func(o *ginOtel) {
 		o.panicHooks = append(o.panicHooks, hook)
 	}
 }
 
+// WithRecordResponse sets a function to determine if the response should be recorded.
+// If it returns true, the tracer will record with the response body.
 func WithRecordResponse(recordResponse func(c *gin.Context) bool) GinOtelOption {
 	return func(o *ginOtel) {
 		o.recordResponse = recordResponse
 	}
 }
 
+// WithResponseFormat sets a function to format the response body.
+// If not set, the response body will be recorded as is.
 func WithResponseFormat(fn func(body *bytes.Buffer) string) GinOtelOption {
 	return func(o *ginOtel) {
 		o.formatResponse = fn
