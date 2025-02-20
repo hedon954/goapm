@@ -2,6 +2,7 @@ package apm
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -95,6 +96,11 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
+		// set gin context to request context
+		// so that logrus can get the gin context to set the error flag
+		ctx := c.Request.Context()
+		ctx = newCtxWithGin(ctx, c)
+
 		// check if record response
 		recordResponse := false
 		var blw *bodyLogWriter
@@ -118,7 +124,6 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 		serverHandleCounter.WithLabelValues(MetricTypeHTTP, c.Request.Method+"."+c.FullPath(), "", "").Inc()
 
 		// trace
-		ctx := c.Request.Context()
 		ctx = otel.GetTextMapPropagator().Extract(ctx, propagation.HeaderCarrier(c.Request.Header))
 		ctx, span := tracer.Start(ctx, "HTTP "+c.Request.Method+" "+c.FullPath())
 		defer span.End()
@@ -206,4 +211,8 @@ func formatRequestParams(form url.Values) string {
 	}
 	bs, _ := sonic.Marshal(param)
 	return string(bs)
+}
+
+func newCtxWithGin(ctx context.Context, c *gin.Context) context.Context {
+	return context.WithValue(ctx, gin.ContextKey, c)
 }
