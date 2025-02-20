@@ -37,7 +37,7 @@ func (w *bodyLogWriter) Write(b []byte) (int, error) {
 type ginOtel struct {
 	panicHooks     []func(c *gin.Context, panic any) (stop bool)
 	recordResponse func(c *gin.Context) bool
-	formatResponse func(body *bytes.Buffer) string
+	formatResponse func(c *gin.Context, body *bytes.Buffer) string
 }
 
 // GinOtelOption is a function that configures the ginOtel middleware.
@@ -60,7 +60,7 @@ func WithRecordResponse(recordResponse func(c *gin.Context) bool) GinOtelOption 
 
 // WithResponseFormat sets a function to format the response body.
 // If not set, the response body will be recorded as is.
-func WithResponseFormat(fn func(body *bytes.Buffer) string) GinOtelOption {
+func WithResponseFormat(fn func(c *gin.Context, body *bytes.Buffer) string) GinOtelOption {
 	return func(o *ginOtel) {
 		o.formatResponse = fn
 	}
@@ -149,7 +149,7 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 			if recordResponse {
 				span.SetAttributes(attribute.Bool("pinned", true))
 				if o.formatResponse != nil {
-					span.SetAttributes(attribute.String("response", o.formatResponse(blw.body)))
+					span.SetAttributes(attribute.String("response", o.formatResponse(c, blw.body)))
 				} else {
 					span.SetAttributes(attribute.String("response", blw.body.String()))
 				}
