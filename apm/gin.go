@@ -35,8 +35,18 @@ func (w *bodyLogWriter) Write(b []byte) (int, error) {
 
 // ginOtel is the middleware for tracing, metrics and logging.
 type ginOtel struct {
-	panicHooks     []func(c *gin.Context, panic any) (stop bool)
+	// panic hooks are called when a panic occurs.
+	panicHooks []func(c *gin.Context, panic any) (stop bool)
+
+	// recordResponse is called to determine if the response should be recorded.
+	// any of recordResponse and recordResponseWhenLogrusError return true, the response will be recorded.
 	recordResponse func(c *gin.Context) bool
+
+	// recordResponseWhenLogrusError is called to determine if the response should be recorded when logrus.Error() is called.
+	// any of recordResponse and recordResponseWhenLogrusError return true, the response will be recorded.
+	recordResponseWhenLogrusError bool
+
+	// formatResponse is called to format the response body.
 	formatResponse func(c *gin.Context, body *bytes.Buffer) string
 }
 
@@ -66,6 +76,13 @@ func WithResponseFormat(fn func(c *gin.Context, body *bytes.Buffer) string) GinO
 	}
 }
 
+// WithRecordResponseWhenLogrusError sets a function to determine if the response should be recorded when logrus.Error() is called.
+func WithRecordResponseWhenLogrusError(record bool) GinOtelOption {
+	return func(o *ginOtel) {
+		o.recordResponseWhenLogrusError = record
+	}
+}
+
 // GinOtel creates a Gin middleware for tracing, metrics and logging.
 func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 	tracer := otel.Tracer(ginTracerName)
@@ -79,13 +96,20 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 		// check if record response
 		recordResponse := false
 		var blw *bodyLogWriter
-		if o.recordResponse != nil && o.recordResponse(c) {
+		if o.recordResponseWhenLogrusError {
+			if _, ok := c.Value(errorLogKey).(bool); ok {
+				recordResponse = true
+			}
+		}
+		if !recordResponse && o.recordResponse != nil && o.recordResponse(c) {
+			recordResponse = true
+		}
+		if recordResponse {
 			blw = &bodyLogWriter{
 				ResponseWriter: c.Writer,
 				body:           &bytes.Buffer{},
 			}
 			c.Writer = blw
-			recordResponse = true
 		}
 
 		// metrics

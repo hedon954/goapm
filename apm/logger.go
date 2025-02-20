@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -19,6 +20,7 @@ import (
 const (
 	traceID          = "trace_id"
 	logrusTracerName = "goapm/logrus"
+	errorLogKey      = "logrus_has_error"
 
 	emptyTraceID = "00000000000000000000000000000000"
 )
@@ -88,6 +90,11 @@ func (l *logrusTracerHook) Fire(entry *logrus.Entry) error {
 	if entry.Context == nil {
 		return nil
 	}
+
+	if ginCtx, exists := entry.Context.Value(gin.ContextKey).(*gin.Context); exists && ginCtx != nil {
+		ginCtx.Set(errorLogKey, true)
+	}
+
 	spanCtx := trace.SpanContextFromContext(entry.Context)
 	if !spanCtx.IsValid() {
 		return nil
