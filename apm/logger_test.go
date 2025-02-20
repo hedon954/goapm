@@ -37,6 +37,22 @@ func depth8() (string, string)  { return depth7() }
 func depth9() (string, string)  { return depth8() }
 func depth10() (string, string) { return depth9() }
 
+type testCaller struct{}
+
+func (t *testCaller) aFunctionCallLogrus() {
+	logrus.WithContext(context.Background()).Error("test")
+}
+
+func (t *testCaller) aFunctionCallLogrus2() {
+	t.aFunctionCallLogrus()
+}
+
+func TestFindCaller(t *testing.T) {
+	tc := &testCaller{}
+	tc.aFunctionCallLogrus()
+	tc.aFunctionCallLogrus2()
+}
+
 func BenchmarkFindCaller(b *testing.B) {
 	tests := []struct {
 		name     string

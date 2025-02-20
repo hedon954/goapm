@@ -111,6 +111,7 @@ func (l *logrusTracerHook) Fire(entry *logrus.Entry) error {
 	span.SetAttributes(attribute.Bool("error", true))
 	span.RecordError(getEntryError(entry), trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
 	if caller != "" {
+		// entry.Data["caller"] = caller // for testing
 		span.SetAttributes(attribute.String("caller", caller))
 	}
 	return nil
@@ -156,10 +157,19 @@ func findCaller() (fnName, caller string) {
 			continue
 		}
 
-		if idx := strings.LastIndex(fname, "."); idx >= 0 {
+		// Keep everything after the last '/'
+		if idx := strings.LastIndex(fname, "/"); idx >= 0 {
 			fname = fname[idx+1:]
 		}
-		if fname == "Error" {
+
+		// For methods, keep the format "(*Type).Method"
+		// But we still want to remove the package prefix
+		if parts := strings.Split(fname, "."); len(parts) >= 2 {
+			fname = strings.Join(parts[1:], ".")
+		}
+
+		// Skip the Error method from `apm.Logger.Error()`
+		if fname == "(*logger).Error" {
 			continue
 		}
 
