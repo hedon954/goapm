@@ -111,7 +111,6 @@ func (l *logrusTracerHook) Fire(entry *logrus.Entry) error {
 	span.SetAttributes(attribute.Bool("error", true))
 	span.RecordError(getEntryError(entry), trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
 	if caller != "" {
-		// entry.Data["caller"] = caller // for testing
 		span.SetAttributes(attribute.String("caller", caller))
 	}
 	return nil
