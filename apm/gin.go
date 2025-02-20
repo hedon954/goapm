@@ -18,6 +18,8 @@ import (
 
 const (
 	ginTracerName = "goapm/gin"
+
+	GinTraceIDKey = "goapm/gin/trace_id"
 )
 
 // bodyLogWriter is a wrapper around gin.ResponseWriter that logs the response body.
@@ -121,6 +123,7 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 		ctx, span := tracer.Start(ctx, "HTTP "+c.Request.Method+" "+c.FullPath())
 		defer span.End()
 		c.Request = c.Request.WithContext(ctx)
+		c.Set(GinTraceIDKey, span.SpanContext().TraceID().String())
 
 		start := time.Now()
 		defer func() {
