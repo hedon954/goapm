@@ -33,6 +33,7 @@ func (w *bodyLogWriter) Write(b []byte) (int, error) {
 type ginOtel struct {
 	panicHooks     []func(c *gin.Context, panic any) (stop bool)
 	recordResponse func(c *gin.Context) bool
+	formatResponse func(body *bytes.Buffer) string
 }
 
 type GinOtelOption func(o *ginOtel)
@@ -46,6 +47,12 @@ func WithPanicHook(hook func(c *gin.Context, panic any) (stop bool)) GinOtelOpti
 func WithRecordResponse(recordResponse func(c *gin.Context) bool) GinOtelOption {
 	return func(o *ginOtel) {
 		o.recordResponse = recordResponse
+	}
+}
+
+func WithResponseFormat(fn func(body *bytes.Buffer) string) GinOtelOption {
+	return func(o *ginOtel) {
+		o.formatResponse = fn
 	}
 }
 
@@ -83,8 +90,12 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 
 		start := time.Now()
 		defer func() {
+			hasPanic := false
+
 			// panic recover
 			if err := recover(); err != nil {
+				hasPanic = true
+
 				span.SetAttributes(
 					attribute.Bool("error", true),
 					attribute.String("path", c.FullPath()),
@@ -126,11 +137,15 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 
 			// record response
 			if recordResponse {
-				span.SetAttributes(
-					attribute.Bool("pinned", true),
-					attribute.String("http.request.params", formatRequestParams(c.Request.Form)),
-					attribute.String("http.response.body", blw.body.String()),
-				)
+				span.SetAttributes(attribute.Bool("pinned", true))
+				if o.formatResponse != nil {
+					span.SetAttributes(attribute.String("response", o.formatResponse(blw.body)))
+				} else {
+					span.SetAttributes(attribute.String("response", blw.body.String()))
+				}
+				if !hasPanic {
+					span.SetAttributes(attribute.String("params", formatRequestParams(c.Request.Form)))
+				}
 			}
 
 			// metrics

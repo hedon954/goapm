@@ -93,8 +93,14 @@ func (l *logrusTracerHook) Fire(entry *logrus.Entry) error {
 		return nil
 	}
 
+	fnName, callback := findCaller()
+	spanName := fnName
+	if spanName == "" {
+		spanName = "logrus.error"
+	}
+
 	tracer := otel.Tracer(logrusTracerName)
-	_, span := tracer.Start(entry.Context, "log.error")
+	_, span := tracer.Start(entry.Context, spanName)
 	defer span.End()
 
 	traceID := span.SpanContext().TraceID().String()
@@ -104,8 +110,8 @@ func (l *logrusTracerHook) Fire(entry *logrus.Entry) error {
 
 	span.SetAttributes(attribute.Bool("error", true))
 	span.RecordError(getEntryError(entry), trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
-	if caller := findCaller(); caller != "" {
-		span.SetAttributes(attribute.String("caller", caller))
+	if callback != "" {
+		span.SetAttributes(attribute.String("caller", callback))
 	}
 	return nil
 }
@@ -122,7 +128,7 @@ func getEntryError(entry *logrus.Entry) error {
 
 // findCaller gets the business function where invoke logrus.Error()
 // nolint:gocritic
-func findCaller() string {
+func findCaller() (fnName, callback string) {
 	// github.com/hedon954/goapm/apm.(*logrusTracerHook).Fire
 	// github.com/sirupsen/logrus.LevelHooks.Fire
 	// github.com/sirupsen/logrus.(*Entry).fireHooks
@@ -143,21 +149,23 @@ func findCaller() string {
 			continue
 		}
 
-		fnName := fn.Name()
-		if strings.Contains(fnName, "logrus") ||
-			strings.Contains(fnName, "Entry") ||
+		fname := fn.Name()
+		if strings.Contains(fname, "logrus") ||
+			strings.Contains(fname, "Entry") ||
 			strings.Contains(file, "logrus") {
 			continue
 		}
 
-		if idx := strings.LastIndex(fnName, "."); idx >= 0 {
-			fnName = fnName[idx+1:]
+		if idx := strings.LastIndex(fname, "."); idx >= 0 {
+			fname = fname[idx+1:]
 		}
-		if fnName == "Error" {
+		if fname == "Error" {
 			continue
 		}
 
-		return fmt.Sprintf("%s:%d %s", file, line, fnName)
+		fnName = fname
+		callback = fmt.Sprintf("%s:%d", file, line)
+		break
 	}
-	return ""
+	return fnName, callback
 }

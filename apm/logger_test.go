@@ -26,21 +26,21 @@ func aFuncToCallLoggerError() {
 }
 
 // helper functions to create different stack depths
-func depth1() string  { return findCaller() }
-func depth2() string  { return depth1() }
-func depth3() string  { return depth2() }
-func depth4() string  { return depth3() }
-func depth5() string  { return depth4() }
-func depth6() string  { return depth5() }
-func depth7() string  { return depth6() }
-func depth8() string  { return depth7() }
-func depth9() string  { return depth8() }
-func depth10() string { return depth9() }
+func depth1() (string, string)  { return findCaller() }
+func depth2() (string, string)  { return depth1() }
+func depth3() (string, string)  { return depth2() }
+func depth4() (string, string)  { return depth3() }
+func depth5() (string, string)  { return depth4() }
+func depth6() (string, string)  { return depth5() }
+func depth7() (string, string)  { return depth6() }
+func depth8() (string, string)  { return depth7() }
+func depth9() (string, string)  { return depth8() }
+func depth10() (string, string) { return depth9() }
 
 func BenchmarkFindCaller(b *testing.B) {
 	tests := []struct {
 		name     string
-		callFunc func() string
+		callFunc func() (string, string)
 	}{
 		{"Depth1", depth1},
 		{"Depth2", depth2},
@@ -58,7 +58,7 @@ func BenchmarkFindCaller(b *testing.B) {
 		b.Run(tt.name, func(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				_ = tt.callFunc()
+				_, _ = tt.callFunc()
 			}
 		})
 	}
