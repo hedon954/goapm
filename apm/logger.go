@@ -93,7 +93,7 @@ func (l *logrusTracerHook) Fire(entry *logrus.Entry) error {
 		return nil
 	}
 
-	fnName, callback := findCaller()
+	fnName, caller := findCaller()
 	spanName := fnName
 	if spanName == "" {
 		spanName = "logrus.error"
@@ -110,8 +110,8 @@ func (l *logrusTracerHook) Fire(entry *logrus.Entry) error {
 
 	span.SetAttributes(attribute.Bool("error", true))
 	span.RecordError(getEntryError(entry), trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
-	if callback != "" {
-		span.SetAttributes(attribute.String("caller", callback))
+	if caller != "" {
+		span.SetAttributes(attribute.String("caller", caller))
 	}
 	return nil
 }
@@ -128,7 +128,7 @@ func getEntryError(entry *logrus.Entry) error {
 
 // findCaller gets the business function where invoke logrus.Error()
 // nolint:gocritic
-func findCaller() (fnName, callback string) {
+func findCaller() (fnName, caller string) {
 	// github.com/hedon954/goapm/apm.(*logrusTracerHook).Fire
 	// github.com/sirupsen/logrus.LevelHooks.Fire
 	// github.com/sirupsen/logrus.(*Entry).fireHooks
@@ -164,8 +164,8 @@ func findCaller() (fnName, callback string) {
 		}
 
 		fnName = fname
-		callback = fmt.Sprintf("%s:%d", file, line)
+		caller = fmt.Sprintf("%s:%d %s", file, line, fname)
 		break
 	}
-	return fnName, callback
+	return fnName, caller
 }
