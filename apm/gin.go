@@ -124,12 +124,13 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 		defer span.End()
 		c.Request = c.Request.WithContext(ctx)
 		c.Set(GinTraceIDKey, span.SpanContext().TraceID().String())
+		c.Writer.Header().Set(GinTraceIDKey, span.SpanContext().TraceID().String())
 
 		start := time.Now()
 		defer func() {
-			hasPanic := false
 
 			// panic recover
+			hasPanic := false
 			if err := recover(); err != nil {
 				hasPanic = true
 
