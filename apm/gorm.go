@@ -35,7 +35,10 @@ func newGormDialector(name, connectURL string) *gormDialector {
 	return &gormDialector{
 		connectURL: connectURL,
 		driverName: driverName,
-		Dialector:  mysql.Open(connectURL),
+		Dialector: mysql.New(mysql.Config{
+			DriverName: driverName,
+			DSN:        connectURL,
+		}),
 	}
 }
 
