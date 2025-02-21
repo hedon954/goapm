@@ -47,13 +47,13 @@ func (h *redisHook) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
 	return func(ctx context.Context, cmd redis.Cmder) error {
 		ctx, span := tracer.Start(ctx, fmt.Sprintf("redis.v9.processCmd-[%s]", h.name))
 		defer span.End()
-
 		span.SetAttributes(attribute.String("cmd", truncate(cmd.String())))
 
 		err := next(ctx, cmd)
 		if err != nil && !errors.Is(err, redis.Nil) {
+			span.SetAttributes(attribute.String("cmd", truncate(cmd.String())))
 			span.SetAttributes(attribute.Bool("error", true))
-			span.RecordError(err, trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
+			span.RecordError(err, trace.WithTimestamp(time.Now()))
 		}
 		return err
 	}
@@ -70,7 +70,7 @@ func (h *redisHook) ProcessPipelineHook(next redis.ProcessPipelineHook) redis.Pr
 		err := next(ctx, cmds)
 		if err != nil && !errors.Is(err, redis.Nil) {
 			span.SetAttributes(attribute.Bool("error", true))
-			span.RecordError(err, trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
+			span.RecordError(err, trace.WithTimestamp(time.Now()))
 		}
 		return err
 	}
