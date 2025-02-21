@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -47,7 +48,7 @@ func (h *redisHook) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
 	return func(ctx context.Context, cmd redis.Cmder) error {
 		ctx, span := tracer.Start(ctx, fmt.Sprintf("redis.v9.processCmd-[%s]", h.name))
 		defer span.End()
-		span.SetAttributes(attribute.String("cmd", truncate(cmd.String())))
+		span.SetAttributes(attribute.String("cmd", trimArgs(cmd.Args())))
 
 		err := next(ctx, cmd)
 		if err != nil && !errors.Is(err, redis.Nil) {
@@ -74,4 +75,11 @@ func (h *redisHook) ProcessPipelineHook(next redis.ProcessPipelineHook) redis.Pr
 		}
 		return err
 	}
+}
+
+func trimArgs(args []interface{}) string {
+	res := fmt.Sprintf("%v", args)
+	res = strings.TrimPrefix(res, "[")
+	res = strings.TrimSuffix(res, "]")
+	return res
 }
