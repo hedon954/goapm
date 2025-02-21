@@ -58,6 +58,7 @@ func NewMySQL(name, connectURL string) (*sql.DB, error) {
 }
 
 func wrap(d driver.Driver, name, connectURL string) driver.Driver {
+	spanName := fmt.Sprintf("sqltrace-[%s]", name)
 	tracer := otel.Tracer(mysqlTracerName)
 	dsn, err := mysql.ParseDSN(connectURL)
 	if err != nil {
@@ -67,7 +68,7 @@ func wrap(d driver.Driver, name, connectURL string) driver.Driver {
 		Before: func(ctx context.Context, query string, args ...any) (context.Context, error) {
 			// trace
 			ctx = context.WithValue(ctx, ctxBeginTime, time.Now())
-			if ctx, span := tracer.Start(ctx, "sqltrace"); span != nil {
+			if ctx, span := tracer.Start(ctx, spanName); span != nil {
 				span.SetAttributes(
 					attribute.String("mysql.name", name),
 					attribute.String("sql", truncate(query)),

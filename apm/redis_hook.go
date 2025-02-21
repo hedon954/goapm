@@ -54,7 +54,7 @@ func (h *redisHook) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
 		if err != nil && !errors.Is(err, redis.Nil) {
 			span.SetAttributes(attribute.String("cmd", truncate(cmd.String())))
 			span.SetAttributes(attribute.Bool("error", true))
-			span.RecordError(err, trace.WithTimestamp(time.Now()))
+			span.RecordError(err, trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
 		}
 		return err
 	}
@@ -71,7 +71,7 @@ func (h *redisHook) ProcessPipelineHook(next redis.ProcessPipelineHook) redis.Pr
 		err := next(ctx, cmds)
 		if err != nil && !errors.Is(err, redis.Nil) {
 			span.SetAttributes(attribute.Bool("error", true))
-			span.RecordError(err, trace.WithTimestamp(time.Now()))
+			span.RecordError(err, trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
 		}
 		return err
 	}
