@@ -65,7 +65,6 @@ func wrap(d driver.Driver, name, connectURL string) driver.Driver {
 	}
 	return &Driver{d, Hooks{
 		Before: func(ctx context.Context, query string, args ...any) (context.Context, error) {
-			panic("query before")
 			// trace
 			ctx = context.WithValue(ctx, ctxBeginTime, time.Now())
 			if ctx, span := tracer.Start(ctx, "sqltrace"); span != nil {
