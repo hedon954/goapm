@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -39,7 +40,7 @@ func (w *bodyLogWriter) Write(b []byte) (int, error) {
 // ginOtel is the middleware for tracing, metrics and logging.
 type ginOtel struct {
 	// panic hooks are called when a panic occurs.
-	panicHooks []func(c *gin.Context, panic any) (stop bool)
+	panicHooks []func(c *gin.Context, panic any, stack []byte) (stop bool)
 
 	// recordResponse is called to determine if the response should be recorded.
 	// any of recordResponse and recordResponseWhenLogrusError return true, the response will be recorded.
@@ -57,7 +58,7 @@ type ginOtel struct {
 type GinOtelOption func(o *ginOtel)
 
 // WithPanicHook sets a hook to be called when a panic occurs.
-func WithPanicHook(hook func(c *gin.Context, panic any) (stop bool)) GinOtelOption {
+func WithPanicHook(hook func(c *gin.Context, panic any, stack []byte) (stop bool)) GinOtelOption {
 	return func(o *ginOtel) {
 		o.panicHooks = append(o.panicHooks, hook)
 	}
@@ -153,8 +154,9 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 				c.AbortWithStatus(http.StatusInternalServerError)
 
 				// run panic hooks
+				stack := getStack()
 				for _, hook := range o.panicHooks {
-					if hook(c, err) {
+					if hook(c, err, stack) {
 						break
 					}
 				}
@@ -215,4 +217,27 @@ func formatRequestParams(form url.Values) string {
 
 func newCtxWithGin(ctx context.Context, c *gin.Context) context.Context {
 	return context.WithValue(ctx, gin.ContextKey, c)
+}
+
+func getStack() []byte {
+	const skip = 2
+
+	pc := make([]uintptr, 50)
+	n := runtime.Callers(skip, pc)
+	if n == 0 {
+		return []byte{}
+	}
+
+	pc = pc[:n]
+	frames := runtime.CallersFrames(pc)
+
+	var buf bytes.Buffer
+	for {
+		frame, more := frames.Next()
+		fmt.Fprintf(&buf, "%s\n\t%s:%d\n", frame.Function, frame.File, frame.Line)
+		if !more {
+			break
+		}
+	}
+	return buf.Bytes()
 }

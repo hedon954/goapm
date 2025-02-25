@@ -1,6 +1,7 @@
 package apm
 
 import (
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -46,4 +47,16 @@ func TestGinServer_Handle(t *testing.T) {
 			break
 		}
 	}
+}
+
+func TestGetStack(t *testing.T) {
+	callGetStack()
+}
+
+func callGetStack() {
+	a := func() {
+		stack := getStack()
+		fmt.Println(string(stack))
+	}
+	a()
 }
