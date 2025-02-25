@@ -62,6 +62,8 @@ type InfraOption func(*Infra)
 func NewInfra(name string, opts ...InfraOption) *Infra {
 	internal.BuildInfo.SetAppName(name)
 
+	apm.InitMetricRegistry()
+
 	infra := &Infra{
 		Name:       name,
 		Tracer:     otel.Tracer(fmt.Sprintf("goapm/service/%s", name)),

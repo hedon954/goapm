@@ -2,6 +2,7 @@ package apm
 
 import (
 	"regexp"
+	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
@@ -18,24 +19,10 @@ const (
 	LibraryTypeRedis = "redis"
 )
 
-func init() {
-	MetricsReg.MustRegister(serverHandleHistogram, serverHandleCounter, clientHandleCounter, clientHandleHistogram, libraryCounter)
-	MetricsReg.MustRegister(
-		collectors.NewGoCollector(
-			collectors.WithGoCollectorRuntimeMetrics(collectors.GoRuntimeMetricsRule{
-				Matcher: regexp.MustCompile("/.*"),
-			}),
-		),
-		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
-	)
-}
-
 var (
 	// MetricsReg is the global metric registry.
-	MetricsReg = newCustomMetricRegistry(map[string]string{
-		"host": internal.BuildInfo.Hostname(),
-		"app":  internal.BuildInfo.AppName(),
-	})
+	MetricsReg = newCustomMetricRegistry(nil)
+	once       sync.Once
 )
 
 var (
@@ -70,6 +57,28 @@ var (
 type customMetricRegistry struct {
 	*prometheus.Registry
 	customLabels []*io_prometheus_client.LabelPair
+}
+
+// InitMetricRegistry initializes the metric registry.
+// It initializes the registry and registers the metrics.
+func InitMetricRegistry() *customMetricRegistry {
+	once.Do(func() {
+		MetricsReg = newCustomMetricRegistry(map[string]string{
+			"host": internal.BuildInfo.Hostname(),
+			"app":  internal.BuildInfo.AppName(),
+		})
+
+		MetricsReg.MustRegister(serverHandleHistogram, serverHandleCounter, clientHandleCounter, clientHandleHistogram, libraryCounter)
+		MetricsReg.MustRegister(
+			collectors.NewGoCollector(
+				collectors.WithGoCollectorRuntimeMetrics(collectors.GoRuntimeMetricsRule{
+					Matcher: regexp.MustCompile("/.*"),
+				}),
+			),
+			collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+		)
+	})
+	return MetricsReg
 }
 
 func newCustomMetricRegistry(labels map[string]string) *customMetricRegistry {
