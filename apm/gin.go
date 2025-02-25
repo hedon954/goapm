@@ -220,7 +220,7 @@ func newCtxWithGin(ctx context.Context, c *gin.Context) context.Context {
 }
 
 func getStack() []byte {
-	const skip = 2
+	const skip = 3
 
 	pc := make([]uintptr, 50)
 	n := runtime.Callers(skip, pc)
