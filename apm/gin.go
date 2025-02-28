@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
-	"mosn.io/pkg/binding"
 )
 
 const (
@@ -239,8 +238,8 @@ func newCtxWithGin(ctx context.Context, c *gin.Context) context.Context {
 func setRequestParams(c *gin.Context, span trace.Span) {
 	span.SetAttributes(attribute.String("http.request.query", formatRequestQuery(c.Request.URL.Query())))
 
-	contentType := strings.ToLower(c.Request.Header.Get("Content-Type"))
-	if contentType == binding.MIMEJSON {
+	contentType := strings.ToLower(c.Request.Header.Get(HeaderContentType))
+	if contentType == ContentTypeJSON {
 		span.SetAttributes(attribute.String("http.request.body", c.GetString(ginBodyKey)))
 	} else {
 		span.SetAttributes(attribute.String("http.request.params", formatRequestParams(c.Request.Form)))
@@ -297,8 +296,8 @@ func getStack() []byte {
 }
 
 func cacheJsonBody(c *gin.Context) {
-	contentType := strings.ToLower(c.Request.Header.Get("Content-Type"))
-	if contentType == binding.MIMEJSON {
+	contentType := strings.ToLower(c.Request.Header.Get(HeaderContentType))
+	if contentType == ContentTypeJSON {
 		body := c.Request.Body
 		if body != nil {
 			bodyBytes, _ := io.ReadAll(body)
