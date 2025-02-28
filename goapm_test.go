@@ -9,6 +9,7 @@ import (
 	redisv6 "github.com/go-redis/redis"
 	"github.com/hedon954/goapm/apm"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 )
@@ -39,7 +40,10 @@ func TestGoAPM_infra_smoke_should_success(t *testing.T) {
 				EnableMem:       true,
 				EnableGoroutine: true,
 			}),
-			WithMetrics(nil),
+			WithMetrics(prometheus.NewCounter(prometheus.CounterOpts{
+				Name: "test_counter",
+				Help: "test counter",
+			})),
 			WithRotateLog(tmpDir, rotatelogs.WithRotationTime(time.Hour*24)),
 			WithCloser(func() { closerCalled = true }),
 		)
