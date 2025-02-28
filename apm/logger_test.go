@@ -3,9 +3,12 @@ package apm
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLogrusHook(t *testing.T) {
@@ -78,4 +81,29 @@ func BenchmarkFindCaller(b *testing.B) {
 			}
 		})
 	}
+}
+
+func TestLogrusTracerHook_can_get_gin_context_and_set_error_flag(t *testing.T) {
+	c := &gin.Context{}
+	c.Request = &http.Request{}
+
+	// create a new context with gin context
+	ctx := newCtxWithGin(c.Request.Context(), c)
+
+	// no error log key in the context
+	assert.Nil(t, c.Value(errorLogKey))
+
+	// set error log key in the context and check if it's set
+	logrus.WithContext(ctx).Error("test")
+	assert.True(t, c.Value(errorLogKey).(bool))
+
+	// once error log key is set, it will be set to the context in whole trace
+	logrus.WithContext(ctx).Info("test")
+	assert.True(t, c.Value(errorLogKey).(bool))
+	logrus.WithContext(ctx).Warn("test")
+	assert.True(t, c.Value(errorLogKey).(bool))
+	logrus.WithContext(ctx).Debug("test")
+	assert.True(t, c.Value(errorLogKey).(bool))
+	logrus.WithContext(ctx).Error("test")
+	assert.True(t, c.Value(errorLogKey).(bool))
 }

@@ -46,9 +46,14 @@ type ginOtel struct {
 	// any of recordResponse and recordResponseWhenLogrusError return true, the response will be recorded.
 	recordResponse func(c *gin.Context) bool
 
-	// recordResponseWhenLogrusError is called to determine if the response should be recorded when logrus.Error() is called.
-	// any of recordResponse and recordResponseWhenLogrusError return true, the response will be recorded.
+	// recordResponseWhenLogrusError is called to determine if the response should be recorded
+	// when an error attribute is set.
 	recordResponseWhenLogrusError bool
+
+	// filterRecordResponse is called to determine if the response should not be recorded.
+	// if it returns true, the response will not be recorded
+	// regardless of the value of recordResponse and recordResponseWhenLogrusError.
+	filterRecordResponse func(c *gin.Context) bool
 
 	// formatResponse is called to format the response body.
 	formatResponse func(c *gin.Context, body *bytes.Buffer) string
@@ -80,10 +85,20 @@ func WithResponseFormat(fn func(c *gin.Context, body *bytes.Buffer) string) GinO
 	}
 }
 
-// WithRecordResponseWhenLogrusError sets a function to determine if the response should be recorded when logrus.Error() is called.
+// WithRecordResponseWhenLogrusError sets a function to determine if the response should be recorded
+// when `logrus.WithContext(ctx).Error()` is called.
 func WithRecordResponseWhenLogrusError(record bool) GinOtelOption {
 	return func(o *ginOtel) {
 		o.recordResponseWhenLogrusError = record
+	}
+}
+
+// WithFilterRecordResponse sets a function to determine if the response should not be recorded.
+// if it returns true, the response will not be recorded
+// regardless of the value of recordResponse and recordResponseWhenLogrusError.
+func WithFilterRecordResponse(filter func(c *gin.Context) bool) GinOtelOption {
+	return func(o *ginOtel) {
+		o.filterRecordResponse = filter
 	}
 }
 
@@ -97,23 +112,22 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		// set gin context to request context
-		// so that logrus can get the gin context to set the error flag
-		ctx := c.Request.Context()
-		ctx = newCtxWithGin(ctx, c)
+		ctx := newCtxWithGin(c.Request.Context(), c)
 
 		// check if record response
+		mayRecordResponse := o.recordResponseWhenLogrusError
 		recordResponse := false
-		var blw *bodyLogWriter
-		if o.recordResponseWhenLogrusError {
-			if _, ok := c.Value(errorLogKey).(bool); ok {
-				recordResponse = true
-			}
-		}
-		if !recordResponse && o.recordResponse != nil && o.recordResponse(c) {
+		if o.recordResponse != nil && o.recordResponse(c) {
 			recordResponse = true
 		}
-		if recordResponse {
+
+		mustNotRecordResponse := false
+		if o.filterRecordResponse != nil && o.filterRecordResponse(c) {
+			mustNotRecordResponse = true
+		}
+
+		var blw *bodyLogWriter
+		if !mustNotRecordResponse && (mayRecordResponse || recordResponse) {
 			blw = &bodyLogWriter{
 				ResponseWriter: c.Writer,
 				body:           &bytes.Buffer{},
@@ -180,8 +194,15 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 				)
 			}
 
+			// check if any `logrus.WithContext(ctx).Error()`` is called
+			if !mustNotRecordResponse && !recordResponse && mayRecordResponse {
+				if _, ok := c.Get(errorLogKey); ok {
+					recordResponse = true
+				}
+			}
+
 			// record response
-			if recordResponse {
+			if !mustNotRecordResponse && recordResponse {
 				span.SetAttributes(attribute.Bool("pinned", true))
 				if o.formatResponse != nil {
 					span.SetAttributes(attribute.String("http.response.body", o.formatResponse(c, blw.body)))
@@ -204,6 +225,11 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 	}
 }
 
+//nolint:staticcheck
+func newCtxWithGin(ctx context.Context, c *gin.Context) context.Context {
+	return context.WithValue(ctx, gin.ContextKey, c)
+}
+
 func formatRequestParams(form url.Values) string {
 	param := make(map[string]string, len(form))
 	for k, v := range form {
@@ -215,12 +241,9 @@ func formatRequestParams(form url.Values) string {
 	return string(bs)
 }
 
-func newCtxWithGin(ctx context.Context, c *gin.Context) context.Context {
-	return context.WithValue(ctx, gin.ContextKey, c)
-}
-
 func getStack() []byte {
-	const skip = 3
+	// skip runtime.Callers, getStack, apm.GinOtel.defer func, apm.GinOtel
+	const skip = 4
 
 	pc := make([]uintptr, 50)
 	n := runtime.Callers(skip, pc)

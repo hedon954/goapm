@@ -18,7 +18,6 @@ import (
 )
 
 const (
-	traceID          = "trace_id"
 	logrusTracerName = "goapm/logrus"
 	errorLogKey      = "logrus_has_error"
 
