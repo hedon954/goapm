@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
+	"mosn.io/pkg/binding"
 )
 
 const (
@@ -239,10 +240,10 @@ func setRequestParams(c *gin.Context, span trace.Span) {
 	span.SetAttributes(attribute.String("http.request.query", formatRequestQuery(c.Request.URL.Query())))
 
 	contentType := strings.ToLower(c.Request.Header.Get("Content-Type"))
-	if contentType == "application/x-www-form-urlencoded" || contentType == "multipart/form-data" {
-		span.SetAttributes(attribute.String("http.request.params", formatRequestParams(c.Request.Form)))
-	} else if contentType == "application/json" {
+	if contentType == binding.MIMEJSON {
 		span.SetAttributes(attribute.String("http.request.body", c.GetString(ginBodyKey)))
+	} else {
+		span.SetAttributes(attribute.String("http.request.params", formatRequestParams(c.Request.Form)))
 	}
 }
 
@@ -297,7 +298,7 @@ func getStack() []byte {
 
 func cacheJsonBody(c *gin.Context) {
 	contentType := strings.ToLower(c.Request.Header.Get("Content-Type"))
-	if contentType == "application/json" {
+	if contentType == binding.MIMEJSON {
 		body := c.Request.Body
 		if body != nil {
 			bodyBytes, _ := io.ReadAll(body)
