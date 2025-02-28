@@ -30,6 +30,11 @@ jobs:
         image: redis:7.4.0
         ports:
           - 6379:6379
+      goapm-opentelemetry-collector:
+        image: otel/opentelemetry-collector:latest
+        ports:
+          - 4318:4318
+          - 4317:4317
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
