@@ -1,5 +1,7 @@
 package apm
 
+//nolint:all
+
 import (
 	"testing"
 
