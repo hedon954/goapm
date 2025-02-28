@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bytedance/sonic"
@@ -22,6 +24,8 @@ const (
 	ginTracerName = "goapm/gin"
 
 	GinTraceIDKey = "goapm/gin/trace_id"
+
+	ginBodyKey = "goapm/gin/body"
 )
 
 // bodyLogWriter is a wrapper around gin.ResponseWriter that logs the response body.
@@ -113,6 +117,7 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		ctx := newCtxWithGin(c.Request.Context(), c)
+		cacheJsonBody(c)
 
 		// check if record response
 		mayRecordResponse := o.recordResponseWhenLogrusError
@@ -158,8 +163,8 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 					attribute.Bool("error", true),
 					attribute.String("http.request.path", c.FullPath()),
 					attribute.String("http.request.method", c.Request.Method),
-					attribute.String("http.request.params", formatRequestParams(c.Request.Form)),
 				)
+				setRequestParams(c, span)
 				span.RecordError(
 					fmt.Errorf("%v", err),
 					trace.WithStackTrace(true),
@@ -210,7 +215,7 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 					span.SetAttributes(attribute.String("http.response.body", blw.body.String()))
 				}
 				if !hasPanic {
-					span.SetAttributes(attribute.String("http.request.params", formatRequestParams(c.Request.Form)))
+					setRequestParams(c, span)
 				}
 			}
 
@@ -228,6 +233,31 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 //nolint:staticcheck
 func newCtxWithGin(ctx context.Context, c *gin.Context) context.Context {
 	return context.WithValue(ctx, gin.ContextKey, c)
+}
+
+func setRequestParams(c *gin.Context, span trace.Span) {
+	span.SetAttributes(attribute.String("http.request.query", formatRequestQuery(c.Request.URL.Query())))
+
+	contentType := strings.ToLower(c.Request.Header.Get("Content-Type"))
+	if contentType == "application/x-www-form-urlencoded" || contentType == "multipart/form-data" {
+		span.SetAttributes(attribute.String("http.request.params", formatRequestParams(c.Request.Form)))
+	} else if contentType == "application/json" {
+		span.SetAttributes(attribute.String("http.request.body", c.GetString(ginBodyKey)))
+	}
+}
+
+func formatRequestQuery(query url.Values) string {
+	if len(query) == 0 {
+		return ""
+	}
+	param := make(map[string]string, len(query))
+	for k, v := range query {
+		if len(v) > 0 {
+			param[k] = v[0]
+		}
+	}
+	bs, _ := sonic.Marshal(param)
+	return string(bs)
 }
 
 func formatRequestParams(form url.Values) string {
@@ -263,4 +293,16 @@ func getStack() []byte {
 		}
 	}
 	return buf.Bytes()
+}
+
+func cacheJsonBody(c *gin.Context) {
+	contentType := strings.ToLower(c.Request.Header.Get("Content-Type"))
+	if contentType == "application/json" {
+		body := c.Request.Body
+		if body != nil {
+			bodyBytes, _ := io.ReadAll(body)
+			c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+			c.Set(ginBodyKey, string(bodyBytes))
+		}
+	}
 }
