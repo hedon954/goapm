@@ -33,7 +33,7 @@ func TestGoAPM_infra_smoke_should_success(t *testing.T) {
 			WithRedisV9("redis9", &redis.Options{
 				Addr: "127.0.0.1:6379",
 			}),
-			WithAPM("http://127.0.0.1:4318"),
+			WithAPM("http://127.0.0.1:4317"),
 			WithAutoPProf(&apm.AutoPProfOpt{
 				EnableCPU:       true,
 				EnableMem:       true,
