@@ -16,6 +16,11 @@ func setupTestDB() (*gorm.DB, error) {
 }
 
 func Test_GORM_SELECT(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+		return
+	}
+
 	db, err := setupTestDB()
 	assert.Nil(t, err)
 
@@ -38,6 +43,11 @@ func Test_GORM_SELECT(t *testing.T) {
 }
 
 func Test_GORM_INSERT(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+		return
+	}
+
 	db, err := setupTestDB()
 	assert.Nil(t, err)
 
@@ -94,6 +104,11 @@ func Test_GORM_INSERT(t *testing.T) {
 }
 
 func Test_GORM_UPDATE(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+		return
+	}
+
 	db, err := setupTestDB()
 	assert.Nil(t, err)
 
@@ -150,6 +165,11 @@ func Test_GORM_UPDATE(t *testing.T) {
 }
 
 func Test_GORM_DELETE(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+		return
+	}
+
 	db, err := setupTestDB()
 	assert.Nil(t, err)
 

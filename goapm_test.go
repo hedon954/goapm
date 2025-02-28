@@ -15,6 +15,11 @@ import (
 )
 
 func TestGoAPM_infra_smoke_should_success(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+		return
+	}
+
 	deferCalled := false
 	closerCalled := false
 

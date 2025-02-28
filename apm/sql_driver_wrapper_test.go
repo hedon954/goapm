@@ -27,6 +27,11 @@ func (u *User) TableName() string {
 }
 
 func Test_SQLDriverWrapper_SELECT(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+		return
+	}
+
 	db, err := NewMySQL("test", "root:root@tcp(127.0.0.1:3306)/goapm")
 	assert.Nil(t, err)
 	defer db.Close()
@@ -70,6 +75,11 @@ func Test_SQLDriverWrapper_SELECT(t *testing.T) {
 }
 
 func Test_SQLDriverWrapper_INSERT(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+		return
+	}
+
 	db, err := NewMySQL("test", "root:root@tcp(127.0.0.1:3306)/goapm")
 	assert.Nil(t, err)
 	defer db.Close()
@@ -129,6 +139,11 @@ func Test_SQLDriverWrapper_INSERT(t *testing.T) {
 }
 
 func Test_SQLDriverWrapper_UPDATE(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+		return
+	}
+
 	db, err := NewMySQL("test", "root:root@tcp(127.0.0.1:3306)/goapm")
 	assert.Nil(t, err)
 	defer db.Close()
@@ -176,6 +191,11 @@ func Test_SQLDriverWrapper_UPDATE(t *testing.T) {
 }
 
 func Test_SQLDriverWrapper_DELETE(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+		return
+	}
+
 	db, err := NewMySQL("test", "root:root@tcp(127.0.0.1:3306)/goapm")
 	assert.Nil(t, err)
 	defer db.Close()
@@ -229,6 +249,11 @@ func Test_SQLDriverWrapper_DELETE(t *testing.T) {
 }
 
 func Test_SQLDriverWrapper_Prepare(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+		return
+	}
+
 	db, err := NewMySQL("test", "root:root@tcp(127.0.0.1:3306)/goapm")
 	assert.Nil(t, err)
 	defer db.Close()
@@ -286,6 +311,11 @@ func Test_SQLDriverWrapper_Prepare(t *testing.T) {
 }
 
 func Test_SQLDriverWrapper_Transaction(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+		return
+	}
+
 	db, err := NewMySQL("test", "root:root@tcp(127.0.0.1:3306)/goapm")
 	assert.Nil(t, err)
 	defer db.Close()
