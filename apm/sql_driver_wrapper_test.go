@@ -60,11 +60,6 @@ func Test_SQLDriverWrapper_SELECT(t *testing.T) {
 }
 
 func Test_SQLDriverWrapper_INSERT(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in short mode")
-		return
-	}
-
 	db, err := NewMySQL("test", mysqlDSN)
 	assert.Nil(t, err)
 	defer db.Close()
@@ -116,19 +111,16 @@ func Test_SQLDriverWrapper_INSERT(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
 		defer cancel()
 
-		uid := "u001"
-		_, err := db.ExecContext(ctx, "INSERT INTO `t_user` (`uid`, `name`, `age`, `gender`, `address`, `phone`, `email`, `salary`)"+
+		uid := uuid.NewString()
+		_, _ = db.ExecContext(ctx, "INSERT INTO `t_user` (`uid`, `name`, `age`, `gender`, `address`, `phone`, `email`, `salary`)"+
 			"VALUES (?, ?, ?, ?, ?, ?, ?, ?)", uid, "John", 18, "male", "Beijing", "1234567890", "john@example.com", 10000)
-		assert.True(t, strings.Contains(err.Error(), "Duplicate entry"))
+		_, err = db.ExecContext(ctx, "INSERT INTO `t_user` (`uid`, `name`, `age`, `gender`, `address`, `phone`, `email`, `salary`)"+
+			"VALUES (?, ?, ?, ?, ?, ?, ?, ?)", uid, "John", 18, "male", "Beijing", "1234567890", "john@example.com", 10000)
+		assert.Contains(t, strings.ToLower(err.Error()), "duplicate")
 	})
 }
 
 func Test_SQLDriverWrapper_UPDATE(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in short mode")
-		return
-	}
-
 	db, err := NewMySQL("test", mysqlDSN)
 	assert.Nil(t, err)
 	defer db.Close()
@@ -176,11 +168,6 @@ func Test_SQLDriverWrapper_UPDATE(t *testing.T) {
 }
 
 func Test_SQLDriverWrapper_DELETE(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in short mode")
-		return
-	}
-
 	db, err := NewMySQL("test", mysqlDSN)
 	assert.Nil(t, err)
 	defer db.Close()
@@ -234,11 +221,6 @@ func Test_SQLDriverWrapper_DELETE(t *testing.T) {
 }
 
 func Test_SQLDriverWrapper_Prepare(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in short mode")
-		return
-	}
-
 	db, err := NewMySQL("test", mysqlDSN)
 	assert.Nil(t, err)
 	defer db.Close()
@@ -291,16 +273,11 @@ func Test_SQLDriverWrapper_Prepare(t *testing.T) {
 
 		// insert again, should duplicate
 		_, err = stmt.ExecContext(ctx, uid, "Alice", 18, "female", "Shanghai", "0987654321", "alice@example.com", 20000)
-		assert.True(t, strings.Contains(err.Error(), "Duplicate entry"))
+		assert.Contains(t, strings.ToLower(err.Error()), "duplicate")
 	})
 }
 
 func Test_SQLDriverWrapper_Transaction(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in short mode")
-		return
-	}
-
 	db, err := NewMySQL("test", mysqlDSN)
 	assert.Nil(t, err)
 	defer db.Close()
