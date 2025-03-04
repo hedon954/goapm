@@ -62,7 +62,7 @@ func TestGoAPM_infra_smoke_should_success(t *testing.T) {
 				Name: "test_counter",
 				Help: "test counter",
 			})),
-			WithRotateLog(tmpDir, rotatelogs.WithRotationTime(time.Hour*24)),
+			WithRotateLog(filepath.Join(tmpDir, "goapm-test.log"), rotatelogs.WithRotationTime(time.Hour*24)),
 			WithCloser(func() { closerCalled = true }),
 		)
 	})
