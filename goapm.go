@@ -374,28 +374,29 @@ func (infra *Infra) Stop() {
 	}
 
 	// close redis
-	for name, client := range infra.redisV6s {
+	infra.RangeRedisV6(func(name string, client *apm.RedisV6) {
 		_ = client.Close()
 		apm.Logger.Info(context.TODO(), fmt.Sprintf("goapm redis v6 client[%s] closed", name), nil)
-	}
-	for name, client := range infra.redisV9s {
+	})
+	infra.RangeRedisV9(func(name string, client *redis.Client) {
 		_ = client.Close()
 		apm.Logger.Info(context.TODO(), fmt.Sprintf("goapm redis v9 client[%s] closed", name), nil)
-	}
+	})
 
 	// close sql.DB
-	for name, db := range infra.mysqls {
+	infra.RangeSqlDB(func(name string, db *sql.DB) {
 		_ = db.Close()
 		apm.Logger.Info(context.TODO(), fmt.Sprintf("goapm mysql sql.DB[%s] closed", name), nil)
-	}
+	})
+
 	// close gorm
-	for name, db := range infra.gorms {
+	infra.RangeGormDB(func(name string, db *gorm.DB) {
 		d, _ := db.DB()
 		if d != nil {
 			_ = d.Close()
 			apm.Logger.Info(context.TODO(), fmt.Sprintf("goapm gorm db[%s] closed", name), nil)
 		}
-	}
+	})
 
 	apm.Logger.Info(context.TODO(), "goapm infra finished stopping", map[string]any{
 		"name": infra.Name,

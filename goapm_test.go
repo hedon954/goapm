@@ -30,6 +30,7 @@ func TestGoAPM_infra_smoke_should_success(t *testing.T) {
 	defer redisShutdown()
 
 	deferCalled := false
+	prependDeferCalled := false
 	closerCalled := false
 
 	tmpDir, err := os.MkdirTemp("", "goapm-test-*")
@@ -67,6 +68,7 @@ func TestGoAPM_infra_smoke_should_success(t *testing.T) {
 	})
 	assert.NotNil(t, infra)
 	infra.Defer(func() { deferCalled = true })
+	infra.PrependDefer(func() { prependDeferCalled = true })
 
 	// check redis and mysql and gorm
 	assert.NotNil(t, infra.Gorm("gorm"))
@@ -76,6 +78,7 @@ func TestGoAPM_infra_smoke_should_success(t *testing.T) {
 
 	// check defer and closer
 	assert.False(t, deferCalled)
+	assert.False(t, prependDeferCalled)
 	assert.False(t, closerCalled)
 
 	// check gin
@@ -97,6 +100,7 @@ func TestGoAPM_infra_smoke_should_success(t *testing.T) {
 
 	// check defer and closer
 	assert.True(t, deferCalled)
+	assert.True(t, prependDeferCalled)
 	assert.True(t, closerCalled)
 }
 
@@ -105,7 +109,7 @@ func testGin(infra *Infra, t *testing.T) {
 	listener, err := infra.upg.Listen("tcp", ":")
 	assert.Nil(t, err)
 	infra.Defer(func() { assert.Nil(t, listener.Close()) })
-	fmt.Println("gin listen at: ", listener.Addr().String())
+	fmt.Printf("[%s]gin listen at: %s\n", infra.FullName(), listener.Addr().String())
 
 	// run gin
 	ginServer := infra.NewGin(apm.PrometheusBasicAuth("admin", "admin"))
@@ -142,7 +146,7 @@ func testHTTPServer(infra *Infra, t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	// check http server
-	fmt.Println("http server listen at: ", httpServer.Addr())
+	fmt.Printf("[%s]http server listen at: %s\n", infra.FullName(), httpServer.Addr())
 	resp, err := http.Get(fmt.Sprintf("http://%s/http", httpServer.Addr()))
 	assert.Nil(t, err)
 	defer resp.Body.Close()
