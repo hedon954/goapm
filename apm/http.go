@@ -66,6 +66,11 @@ func NewHTTPServer2(listener net.Listener) *HTTPServer {
 	return srv
 }
 
+// Addr returns the address of the http server.
+func (s *HTTPServer) Addr() string {
+	return s.listener.Addr().String()
+}
+
 // Start starts the http server in a new goroutine.
 func (s *HTTPServer) Start() {
 	go func() {

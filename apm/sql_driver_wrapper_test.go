@@ -11,28 +11,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type User struct {
-	Uid     string  `gorm:"column:uid;unique"`
-	Name    string  `gorm:"column:name"`
-	Age     int     `gorm:"column:age"`
-	Gender  string  `gorm:"column:gender"`
-	Address string  `gorm:"column:address"`
-	Phone   string  `gorm:"column:phone"`
-	Email   string  `gorm:"column:email"`
-	Salary  float64 `gorm:"column:salary"`
-}
-
-func (u *User) TableName() string {
-	return "t_user"
-}
-
 func Test_SQLDriverWrapper_SELECT(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping in short mode")
 		return
 	}
 
-	db, err := NewMySQL("test", "root:root@tcp(127.0.0.1:3306)/goapm")
+	db, err := NewMySQL("test", mysqlDSN)
 	assert.Nil(t, err)
 	defer db.Close()
 	t.Run("select without context should work", func(t *testing.T) {
@@ -80,7 +65,7 @@ func Test_SQLDriverWrapper_INSERT(t *testing.T) {
 		return
 	}
 
-	db, err := NewMySQL("test", "root:root@tcp(127.0.0.1:3306)/goapm")
+	db, err := NewMySQL("test", mysqlDSN)
 	assert.Nil(t, err)
 	defer db.Close()
 
@@ -144,7 +129,7 @@ func Test_SQLDriverWrapper_UPDATE(t *testing.T) {
 		return
 	}
 
-	db, err := NewMySQL("test", "root:root@tcp(127.0.0.1:3306)/goapm")
+	db, err := NewMySQL("test", mysqlDSN)
 	assert.Nil(t, err)
 	defer db.Close()
 
@@ -196,7 +181,7 @@ func Test_SQLDriverWrapper_DELETE(t *testing.T) {
 		return
 	}
 
-	db, err := NewMySQL("test", "root:root@tcp(127.0.0.1:3306)/goapm")
+	db, err := NewMySQL("test", mysqlDSN)
 	assert.Nil(t, err)
 	defer db.Close()
 
@@ -254,7 +239,7 @@ func Test_SQLDriverWrapper_Prepare(t *testing.T) {
 		return
 	}
 
-	db, err := NewMySQL("test", "root:root@tcp(127.0.0.1:3306)/goapm")
+	db, err := NewMySQL("test", mysqlDSN)
 	assert.Nil(t, err)
 	defer db.Close()
 
@@ -316,7 +301,7 @@ func Test_SQLDriverWrapper_Transaction(t *testing.T) {
 		return
 	}
 
-	db, err := NewMySQL("test", "root:root@tcp(127.0.0.1:3306)/goapm")
+	db, err := NewMySQL("test", mysqlDSN)
 	assert.Nil(t, err)
 	defer db.Close()
 

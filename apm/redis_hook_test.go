@@ -9,13 +9,8 @@ import (
 )
 
 func TestRedisHook(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in short mode")
-		return
-	}
-
 	client, err := NewRedisV9("test", &redis.Options{
-		Addr: "127.0.0.1:6379",
+		Addr: redisDSN,
 	})
 	assert.Nil(t, err)
 	defer client.Close()

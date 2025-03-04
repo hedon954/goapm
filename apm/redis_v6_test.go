@@ -9,13 +9,8 @@ import (
 )
 
 func TestRedisV6(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in short mode")
-		return
-	}
-
 	client, err := NewRedisV6("test", &redis.Options{
-		Addr: "127.0.0.1:6379",
+		Addr: redisDSN,
 		DB:   10,
 	})
 	assert.Nil(t, err)

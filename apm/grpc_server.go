@@ -51,6 +51,10 @@ func NewGrpcServer2(listener net.Listener, opts ...grpc.ServerOption) *GrpcServe
 	}
 }
 
+func (s *GrpcServer) Addr() string {
+	return s.listener.Addr().String()
+}
+
 func (s *GrpcServer) Start() {
 	go func() {
 		log.Printf("[%s][%s] starting grpc server on: %s\n",

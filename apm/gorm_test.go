@@ -11,16 +11,10 @@ import (
 )
 
 func setupTestDB() (*gorm.DB, error) {
-	dsn := "root:root@tcp(127.0.0.1:3306)/goapm?charset=utf8mb4&parseTime=True&loc=Local"
-	return NewGorm("test", dsn)
+	return NewGorm("test", mysqlDSN)
 }
 
 func Test_GORM_SELECT(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in short mode")
-		return
-	}
-
 	db, err := setupTestDB()
 	assert.Nil(t, err)
 
@@ -43,11 +37,6 @@ func Test_GORM_SELECT(t *testing.T) {
 }
 
 func Test_GORM_INSERT(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in short mode")
-		return
-	}
-
 	db, err := setupTestDB()
 	assert.Nil(t, err)
 
@@ -104,11 +93,6 @@ func Test_GORM_INSERT(t *testing.T) {
 }
 
 func Test_GORM_UPDATE(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in short mode")
-		return
-	}
-
 	db, err := setupTestDB()
 	assert.Nil(t, err)
 
@@ -165,11 +149,6 @@ func Test_GORM_UPDATE(t *testing.T) {
 }
 
 func Test_GORM_DELETE(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in short mode")
-		return
-	}
-
 	db, err := setupTestDB()
 	assert.Nil(t, err)
 
