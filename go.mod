@@ -1,20 +1,22 @@
 module github.com/hedon954/goapm
 
-go 1.23.2
+go 1.24.0
+
+toolchain go1.24.1
 
 require (
 	github.com/alicebob/miniredis v2.5.0+incompatible
 	github.com/bytedance/sonic v1.12.9
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.8.1
-	github.com/hedon954/go-mysql-mocker v1.0.6
+	github.com/hedon954/go-mysql-mocker v1.0.7
 	github.com/prometheus/client_golang v1.20.5
 	github.com/prometheus/client_model v0.6.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
-	go.opentelemetry.io/otel v1.27.0
-	go.opentelemetry.io/otel/trace v1.27.0
+	go.opentelemetry.io/otel v1.31.0
+	go.opentelemetry.io/otel/trace v1.31.0
 	google.golang.org/grpc v1.67.1
 )
 
@@ -25,10 +27,10 @@ require (
 	github.com/cloudwego/base64x v0.1.5 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dolthub/flatbuffers/v23 v23.3.3-dh.2 // indirect
-	github.com/dolthub/go-icu-regex v0.0.0-20230524105445-af7e7991c97e // indirect
-	github.com/dolthub/go-mysql-server v0.18.0 // indirect
+	github.com/dolthub/go-icu-regex v0.0.0-20241215010122-db690dd53c90 // indirect
+	github.com/dolthub/go-mysql-server v0.19.0 // indirect
 	github.com/dolthub/jsonpath v0.0.2-0.20240227200619-19675ab05c71 // indirect
-	github.com/dolthub/vitess v0.0.0-20240228192915-d55088cef56a // indirect
+	github.com/dolthub/vitess v0.0.0-20241211024425-b00987f7ba54 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.6 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-kit/kit v0.10.0 // indirect
@@ -37,7 +39,6 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.22.1 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect
-	github.com/gocraft/dbr/v2 v2.7.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/gomodule/redigo v1.9.2 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.23.0 // indirect
@@ -59,8 +60,8 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
-	github.com/shopspring/decimal v1.2.0 // indirect
-	github.com/tetratelabs/wazero v1.1.0 // indirect
+	github.com/shopspring/decimal v1.3.1 // indirect
+	github.com/tetratelabs/wazero v1.8.2 // indirect
 	github.com/tklauser/go-sysconf v0.3.14 // indirect
 	github.com/tklauser/numcpus v0.8.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
@@ -103,7 +104,7 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/redis/go-redis/v9 v9.7.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.27.0
-	go.opentelemetry.io/otel/metric v1.27.0 // indirect
+	go.opentelemetry.io/otel/metric v1.31.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.27.0
 	golang.org/x/sys v0.27.0 // indirect
 	google.golang.org/genproto v0.0.0-20241104194629-dd2ea8efbc28
