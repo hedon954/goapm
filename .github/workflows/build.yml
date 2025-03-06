@@ -48,7 +48,7 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: v1.64
-          args: --timeout 10m
+          args: --timeout 20m
       - name: Cache Go modules
         uses: actions/cache@v4
         with:
