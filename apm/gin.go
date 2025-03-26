@@ -221,7 +221,7 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 
 			// metrics
 			serverHandleHistogram.WithLabelValues(
-				MetricTypeHTTP, c.Request.Method+"."+c.FullPath(), strconv.Itoa(status), "", "",
+				MetricTypeHTTP, c.Request.Method+"."+c.Request.URL.Path, strconv.Itoa(status), "", "",
 			).Observe(elapsed.Seconds())
 		}()
 

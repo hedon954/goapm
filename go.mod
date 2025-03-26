@@ -1,8 +1,6 @@
 module github.com/hedon954/goapm
 
-go 1.24.0
-
-toolchain go1.24.1
+go 1.24.1
 
 require (
 	github.com/alicebob/miniredis v2.5.0+incompatible

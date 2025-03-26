@@ -83,7 +83,6 @@ jobs:
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
-          continue_on_error: true
           verbose: true
       - name: Get tags info
         id: get_tag_message
