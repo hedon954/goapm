@@ -128,3 +128,11 @@ func NewAPM(otelEndpoint string, opts ...ApmOption) (closeFunc func(), err error
 		}
 	}, nil
 }
+
+func AppName() string {
+	return internal.BuildInfo.AppName()
+}
+
+func SetAppName(name string) {
+	internal.BuildInfo.SetAppName(name)
+}

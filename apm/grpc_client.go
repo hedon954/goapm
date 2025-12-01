@@ -6,6 +6,7 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	otelcodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -16,7 +17,7 @@ import (
 )
 
 const (
-	grpcClientTracerName = "goapm/grpcClient"
+	grpcClientTracerName = "goapm/grpcClient-"
 )
 
 // GrpcClient is a wrapper around grpc.ClientConn that provides tracing, metrics, and logging.
@@ -39,7 +40,7 @@ func NewGrpcClient(addr, server string, opts ...grpc.DialOption) (*GrpcClient, e
 }
 
 func unaryClientInterceptor(server string) grpc.UnaryClientInterceptor {
-	tracer := otel.Tracer(grpcClientTracerName)
+	tracer := otel.Tracer(grpcClientTracerName + internal.BuildInfo.AppName())
 
 	return func(ctx context.Context, method string, req, reply interface{},
 		cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
@@ -51,7 +52,7 @@ func unaryClientInterceptor(server string) grpc.UnaryClientInterceptor {
 			span.End()
 
 			// metric
-			clientHandleHistogram.WithLabelValues(MetricTypeGRPC, method, server).Observe(time.Since(start).Seconds())
+			ClientHandleHistogram.WithLabelValues(MetricTypeGRPC, method, server).Observe(time.Since(start).Seconds())
 		}()
 
 		// set peer info into metadata
@@ -65,13 +66,14 @@ func unaryClientInterceptor(server string) grpc.UnaryClientInterceptor {
 		ctx = metadata.NewOutgoingContext(ctx, md)
 
 		// metric
-		clientHandleCounter.WithLabelValues(MetricTypeGRPC, method, server).Inc()
+		ClientHandleCounter.WithLabelValues(MetricTypeGRPC, method, server).Inc()
 
 		// invoke the actual call
 		err := invoker(ctx, method, req, reply, cc, opts...)
 		if err != nil {
-			span.RecordError(err, trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
+			CustomerRecordError(span, err, true, 5)
 			span.SetAttributes(attribute.Bool("error", true))
+			span.SetStatus(otelcodes.Error, err.Error())
 			s, ok := status.FromError(err)
 			if ok {
 				span.SetAttributes(attribute.String("grpc.status_code", s.Code().String()))

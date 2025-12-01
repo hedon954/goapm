@@ -13,6 +13,7 @@ import (
 	"github.com/xwb1989/sqlparser"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -82,7 +83,7 @@ func wrap(d driver.Driver, name, connectURL string) driver.Driver {
 			// metric
 			table, op, multiTable, err := SQLParser.parseTable(query)
 			if !multiTable && err == nil {
-				libraryCounter.WithLabelValues(LibraryTypeMySQL, sqlparser.StmtType(op), table, dsn.DBName+"."+dsn.Addr).Inc()
+				LibraryCounter.WithLabelValues(LibraryTypeMySQL, sqlparser.StmtType(op), table, dsn.DBName+"."+dsn.Addr).Inc()
 			}
 
 			// trace
@@ -117,7 +118,8 @@ func wrap(d driver.Driver, name, connectURL string) driver.Driver {
 			defer span.End()
 			if !errors.Is(err, driver.ErrSkip) {
 				span.SetAttributes(attribute.Bool("error", true))
-				span.RecordError(err, trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
+				span.SetStatus(codes.Error, err.Error())
+				CustomerRecordError(span, err, true, 14)
 				return err
 			}
 			span.SetAttributes(attribute.Bool("drop", true))

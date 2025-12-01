@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
 	"mosn.io/holmes"
-
 	// import this package to fix the issue: https://github.com/open-telemetry/opentelemetry-collector/issues/10476
 	// since we need to specify the version of google.golang.org/genproto, but we do not use it in the code, so we need to import it to avoid deleting it by the go mod tidy command
 	_ "google.golang.org/genproto/protobuf/api"
@@ -145,12 +144,12 @@ func WithMySQL(name, addr string) InfraOption {
 
 // WithGorm creates a new gorm db and adds it to the infra.
 // name is the business name of the db, and addr is the address of the db.
-func WithGorm(name, addr string) InfraOption {
+func WithGorm(name, addr string, opts ...gorm.Option) InfraOption {
 	return func(infra *Infra) {
 		if infra.gorms[name] != nil {
 			panic(fmt.Errorf("goapm gorm db already exists: %s", name))
 		}
-		db, err := apm.NewGorm(name, addr)
+		db, err := apm.NewGorm(name, addr, opts...)
 		if err != nil {
 			panic(fmt.Errorf("failed to create goapm gorm db[%s]: %w", name, err))
 		}
@@ -373,30 +372,30 @@ func (infra *Infra) Stop() {
 		infra.deferFuncs[i]()
 	}
 
-	// close redis
-	infra.RangeRedisV6(func(name string, client *apm.RedisV6) {
-		_ = client.Close()
-		apm.Logger.Info(context.TODO(), fmt.Sprintf("goapm redis v6 client[%s] closed", name), nil)
-	})
-	infra.RangeRedisV9(func(name string, client *redis.Client) {
-		_ = client.Close()
-		apm.Logger.Info(context.TODO(), fmt.Sprintf("goapm redis v9 client[%s] closed", name), nil)
-	})
+	// // close redis
+	// infra.RangeRedisV6(func(name string, client *apm.RedisV6) {
+	// 	_ = client.Close()
+	// 	apm.Logger.Info(context.TODO(), fmt.Sprintf("goapm redis v6 client[%s] closed", name), nil)
+	// })
+	// infra.RangeRedisV9(func(name string, client *redis.Client) {
+	// 	_ = client.Close()
+	// 	apm.Logger.Info(context.TODO(), fmt.Sprintf("goapm redis v9 client[%s] closed", name), nil)
+	// })
 
-	// close sql.DB
-	infra.RangeSqlDB(func(name string, db *sql.DB) {
-		_ = db.Close()
-		apm.Logger.Info(context.TODO(), fmt.Sprintf("goapm mysql sql.DB[%s] closed", name), nil)
-	})
+	// // close sql.DB
+	// infra.RangeSqlDB(func(name string, db *sql.DB) {
+	// 	_ = db.Close()
+	// 	apm.Logger.Info(context.TODO(), fmt.Sprintf("goapm mysql sql.DB[%s] closed", name), nil)
+	// })
 
-	// close gorm
-	infra.RangeGormDB(func(name string, db *gorm.DB) {
-		d, _ := db.DB()
-		if d != nil {
-			_ = d.Close()
-			apm.Logger.Info(context.TODO(), fmt.Sprintf("goapm gorm db[%s] closed", name), nil)
-		}
-	})
+	// // close gorm
+	// infra.RangeGormDB(func(name string, db *gorm.DB) {
+	// 	d, _ := db.DB()
+	// 	if d != nil {
+	// 		_ = d.Close()
+	// 		apm.Logger.Info(context.TODO(), fmt.Sprintf("goapm gorm db[%s] closed", name), nil)
+	// 	}
+	// })
 
 	apm.Logger.Info(context.TODO(), "goapm infra finished stopping", map[string]any{
 		"name": infra.Name,

@@ -141,7 +141,7 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 		}
 
 		// metrics
-		serverHandleCounter.WithLabelValues(MetricTypeHTTP, c.Request.Method+"."+c.FullPath(), "", "").Inc()
+		ServerHandleCounter.WithLabelValues(MetricTypeHTTP, c.Request.Method+"."+c.FullPath(), "", "").Inc()
 
 		// trace
 		ctx = otel.GetTextMapPropagator().Extract(ctx, propagation.HeaderCarrier(c.Request.Header))
@@ -220,7 +220,7 @@ func GinOtel(opts ...GinOtelOption) gin.HandlerFunc {
 			}
 
 			// metrics
-			serverHandleHistogram.WithLabelValues(
+			ServerHandleHistogram.WithLabelValues(
 				MetricTypeHTTP, c.Request.Method+"."+c.Request.URL.Path, strconv.Itoa(status), "", "",
 			).Observe(elapsed.Seconds())
 		}()

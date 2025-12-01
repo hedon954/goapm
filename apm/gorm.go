@@ -12,8 +12,8 @@ import (
 )
 
 // NewGorm returns a new Gorm DB with hooks.
-func NewGorm(name, connectURL string) (*gorm.DB, error) {
-	db, err := gorm.Open(newGormDialector(name, connectURL), &gorm.Config{})
+func NewGorm(name, connectURL string, opts ...gorm.Option) (*gorm.DB, error) {
+	db, err := gorm.Open(newGormDialector(name, connectURL), opts...)
 	if err != nil {
 		return nil, err
 	}

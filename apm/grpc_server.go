@@ -3,12 +3,12 @@ package apm
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	otelcodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	grpcServerTracerName = "goapm/grpcServer"
+	grpcServerTracerName = "goapm/grpcServer-"
 )
 
 // GrpcServer is a wrapper of grpc.Server.
@@ -40,7 +40,7 @@ func NewGrpcServer(addr string, opts ...grpc.ServerOption) *GrpcServer {
 // NewGrpcServer2 creates a new grpc server with the given listener.
 func NewGrpcServer2(listener net.Listener, opts ...grpc.ServerOption) *GrpcServer {
 	options := []grpc.ServerOption{
-		grpc.UnaryInterceptor(unaryServerInterceptor()),
+		UnaryInterceptor(unaryServerInterceptor()),
 	}
 	options = append(options, opts...)
 
@@ -51,16 +51,26 @@ func NewGrpcServer2(listener net.Listener, opts ...grpc.ServerOption) *GrpcServe
 	}
 }
 
+// UnaryInterceptor is used to replace `grpc.UnaryInterceptor()`,
+// in order to combine the goapm interceptor with the user-defined interceptors.
+//
+// PANIC: user should not use grpc.UnaryInterceptor() directly!!!!
+func UnaryInterceptor(interceptors ...grpc.UnaryServerInterceptor) grpc.ServerOption {
+	return grpc.ChainUnaryInterceptor(interceptors...)
+}
+
 func (s *GrpcServer) Addr() string {
 	return s.listener.Addr().String()
 }
 
 func (s *GrpcServer) Start() {
 	go func() {
-		log.Printf("[%s][%s] starting grpc server on: %s\n",
-			internal.BuildInfo.AppName(),
-			internal.BuildInfo.Hostname(),
-			s.listener.Addr().String(),
+		Logger.Info(context.Background(),
+			fmt.Sprintf("[%s][%s] starting grpc server on: %s",
+				internal.BuildInfo.AppName(),
+				internal.BuildInfo.Hostname(),
+				s.listener.Addr().String(),
+			), nil,
 		)
 		if err := s.Server.Serve(s.listener); err != nil {
 			panic("GRPC server serve failed: " + err.Error())
@@ -73,7 +83,7 @@ func (s *GrpcServer) Stop() {
 }
 
 func unaryServerInterceptor() grpc.UnaryServerInterceptor {
-	tracer := otel.Tracer(grpcServerTracerName)
+	tracer := otel.Tracer(grpcServerTracerName + internal.BuildInfo.AppName())
 
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		// get the metadata from the incoming context or create a new one
@@ -96,13 +106,13 @@ func unaryServerInterceptor() grpc.UnaryServerInterceptor {
 			span.End()
 
 			// metric
-			serverHandleHistogram.WithLabelValues(
+			ServerHandleHistogram.WithLabelValues(
 				MetricTypeGRPC, info.FullMethod, statusCode.String(), peerApp, peerHost,
 			).Observe(time.Since(start).Seconds())
 		}()
 
 		// metric
-		serverHandleCounter.WithLabelValues(MetricTypeGRPC, info.FullMethod, peerApp, peerHost).Inc()
+		ServerHandleCounter.WithLabelValues(MetricTypeGRPC, info.FullMethod, peerApp, peerHost).Inc()
 
 		// call the handler
 		resp, err := handler(ctx, req)
@@ -113,8 +123,9 @@ func unaryServerInterceptor() grpc.UnaryServerInterceptor {
 			if ok {
 				statusCode = s.Code()
 			}
-			span.RecordError(err, trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
+			CustomerRecordError(span, err, true, 5)
 			span.SetAttributes(attribute.Bool("error", true))
+			span.SetStatus(otelcodes.Error, err.Error())
 			span.SetAttributes(attribute.String("grpc.status_code", s.Code().String()))
 		}
 

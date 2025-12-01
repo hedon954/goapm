@@ -20,11 +20,11 @@ func TestInitMetricRegistry(t *testing.T) {
 	assert.NotNil(t, registry)
 
 	// Increment metrics
-	serverHandleCounter.WithLabelValues("type", "method", "peer", "peer_host").Inc()
-	serverHandleHistogram.WithLabelValues("type", "method", "status", "peer", "peer_host").Observe(0.2)
-	clientHandleCounter.WithLabelValues("type", "method", "server").Inc()
-	clientHandleHistogram.WithLabelValues("type", "method", "server").Observe(0.1)
-	libraryCounter.WithLabelValues("type", "method", "name", "server").Inc()
+	ServerHandleCounter.WithLabelValues("type", "method", "peer", "peer_host").Inc()
+	ServerHandleHistogram.WithLabelValues("type", "method", "status", "peer", "peer_host").Observe(0.2)
+	ClientHandleCounter.WithLabelValues("type", "method", "server").Inc()
+	ClientHandleHistogram.WithLabelValues("type", "method", "server").Observe(0.1)
+	LibraryCounter.WithLabelValues("type", "method", "name", "server").Inc()
 
 	// Verify all metrics are registered
 	metrics, err := registry.Gather()
@@ -91,10 +91,10 @@ func TestCustomLabels(t *testing.T) {
 func TestMetricsIncrement(t *testing.T) {
 	// Reset registry to avoid interference
 	MetricsReg = newCustomMetricRegistry(nil)
-	MetricsReg.MustRegister(serverHandleCounter)
+	MetricsReg.MustRegister(ServerHandleCounter)
 
 	// Increment counter
-	serverHandleCounter.WithLabelValues(MetricTypeHTTP, "GET.test", "", "").Inc()
+	ServerHandleCounter.WithLabelValues(MetricTypeHTTP, "GET.test", "", "").Inc()
 
 	// Gather metrics
 	families, err := MetricsReg.Gather()
@@ -134,11 +134,11 @@ func TestMetricsIncrement(t *testing.T) {
 func TestMetricsHistogram(t *testing.T) {
 	// Reset registry to avoid interference
 	MetricsReg = newCustomMetricRegistry(nil)
-	MetricsReg.MustRegister(serverHandleHistogram)
+	MetricsReg.MustRegister(ServerHandleHistogram)
 
 	// Observe histogram
-	serverHandleHistogram.WithLabelValues(MetricTypeHTTP, "GET.test", "200", "", "").Observe(0.1)
-	serverHandleHistogram.WithLabelValues(MetricTypeHTTP, "GET.test", "200", "", "").Observe(0.2)
+	ServerHandleHistogram.WithLabelValues(MetricTypeHTTP, "GET.test", "200", "", "").Observe(0.1)
+	ServerHandleHistogram.WithLabelValues(MetricTypeHTTP, "GET.test", "200", "", "").Observe(0.2)
 
 	// Gather metrics
 	families, err := MetricsReg.Gather()

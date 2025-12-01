@@ -5,16 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/redis/go-redis/v9"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
-)
-
-const (
-	redisTracerName = "goapm/redisV9"
 )
 
 // NewRedisV9 creates a new redis client with tracing.
@@ -44,35 +39,50 @@ func (h *redisHook) DialHook(next redis.DialHook) redis.DialHook {
 }
 
 func (h *redisHook) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
-	tracer := otel.Tracer(redisTracerName)
 	return func(ctx context.Context, cmd redis.Cmder) error {
-		ctx, span := tracer.Start(ctx, fmt.Sprintf("redis.v9.processCmd-[%s]", h.name))
-		defer span.End()
-		span.SetAttributes(attribute.String("cmd", trimArgs(cmd.Args())))
+		if ctx == nil || cmd == nil || cmd.Args() == nil {
+			return next(ctx, cmd)
+		}
+		span := trace.SpanFromContext(ctx)
+		if span == nil || !span.IsRecording() {
+			return next(ctx, cmd)
+		}
 
+		eventOpt := trace.WithAttributes(attribute.String("cmd", trimArgs(cmd.Args())))
 		err := next(ctx, cmd)
 		if err != nil && !errors.Is(err, redis.Nil) {
-			span.SetAttributes(attribute.String("cmd", truncate(cmd.String())))
+			eventOpt = trace.WithAttributes(
+				attribute.String("cmd", truncate(cmd.String())),
+				attribute.String("error_msg", err.Error()),
+			)
 			span.SetAttributes(attribute.Bool("error", true))
-			span.RecordError(err, trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
+			span.SetStatus(codes.Error, err.Error())
+			CustomerRecordError(span, err, true, 5)
 		}
+		span.AddEvent(fmt.Sprintf("redis.v9.processCmd-[%s]", h.name), eventOpt)
 		return err
 	}
 }
 
 func (h *redisHook) ProcessPipelineHook(next redis.ProcessPipelineHook) redis.ProcessPipelineHook {
-	tracer := otel.Tracer(redisTracerName)
 	return func(ctx context.Context, cmds []redis.Cmder) error {
-		ctx, span := tracer.Start(ctx, fmt.Sprintf("redis.v9.processPipelineCmd-[%s]", h.name))
-		defer span.End()
+		span := trace.SpanFromContext(ctx)
+		if span == nil || !span.IsRecording() {
+			return next(ctx, cmds)
+		}
 
-		span.SetAttributes(attribute.String("cmd", truncate(fmt.Sprintf("%v", cmds))))
-
+		eventOpt := trace.WithAttributes(attribute.String("cmd", truncate(fmt.Sprintf("%v", cmds))))
 		err := next(ctx, cmds)
 		if err != nil && !errors.Is(err, redis.Nil) {
+			eventOpt = trace.WithAttributes(
+				attribute.String("cmd", truncate(fmt.Sprintf("%v", cmds))),
+				attribute.String("error_msg", err.Error()),
+			)
 			span.SetAttributes(attribute.Bool("error", true))
-			span.RecordError(err, trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
+			span.SetStatus(codes.Error, err.Error())
+			CustomerRecordError(span, err, true, 5)
 		}
+		span.AddEvent(fmt.Sprintf("redis.v9.processPipelineCmd-[%s]", h.name), eventOpt)
 		return err
 	}
 }

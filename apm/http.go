@@ -120,7 +120,7 @@ func (th *traceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// metrics
-	serverHandleCounter.WithLabelValues(MetricTypeHTTP, r.Method+"."+r.URL.Path, "", "").Inc()
+	ServerHandleCounter.WithLabelValues(MetricTypeHTTP, r.Method+"."+r.URL.Path, "", "").Inc()
 
 	// trace
 	ctx := r.Context()
@@ -179,7 +179,7 @@ func (th *traceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// metrics
-	serverHandleHistogram.WithLabelValues(
+	ServerHandleHistogram.WithLabelValues(
 		MetricTypeHTTP, r.Method+"."+r.URL.Path, strconv.Itoa(respWrapper.status), "", "",
 	).Observe(elapsed.Seconds())
 }

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -74,8 +73,21 @@ func (l *logrusHook) Levels() []logrus.Level {
 }
 
 func (l *logrusHook) Fire(entry *logrus.Entry) error {
+	if entry == nil || entry.Data == nil {
+		return nil
+	}
 	entry.Data["host"] = internal.BuildInfo.Hostname()
 	entry.Data["app"] = internal.BuildInfo.AppName()
+
+	if entry.Context == nil {
+		return nil
+	}
+	spanCtx := trace.SpanContextFromContext(entry.Context)
+	if !spanCtx.IsValid() {
+		return nil
+	}
+
+	entry.Data["trace_id"] = spanCtx.TraceID().String()
 	return nil
 }
 
@@ -109,15 +121,11 @@ func (l *logrusTracerHook) Fire(entry *logrus.Entry) error {
 	_, span := tracer.Start(entry.Context, spanName)
 	defer span.End()
 
-	traceID := span.SpanContext().TraceID().String()
-	if traceID != emptyTraceID {
-		entry.Data[traceID] = traceID
-	}
-
 	span.SetAttributes(attribute.Bool("error", true))
-	span.RecordError(getEntryError(entry), trace.WithStackTrace(true), trace.WithTimestamp(time.Now()))
+	CustomerRecordError(span, getEntryError(entry), true, 8)
 	if caller != "" {
-		span.SetAttributes(attribute.String("caller", caller))
+		span.SetAttributes(attribute.String("call.file", caller))
+		span.SetAttributes(attribute.String("call.func", fnName))
 	}
 	return nil
 }
@@ -174,12 +182,12 @@ func findCaller() (fnName, caller string) {
 		}
 
 		// Skip the Error method from `apm.Logger.Error()`
-		if fname == "(*logger).Error" {
+		if fname == "(*logger).Error" || fname == "HandleErr" || strings.Contains(fname, "GinHandler") {
 			continue
 		}
 
 		fnName = fname
-		caller = fmt.Sprintf("%s:%d %s", file, line, fname)
+		caller = fmt.Sprintf("%s:%d", file, line)
 		break
 	}
 	return fnName, caller

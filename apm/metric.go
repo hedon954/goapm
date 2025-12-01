@@ -26,27 +26,27 @@ var (
 )
 
 var (
-	serverHandleHistogram = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+	ServerHandleHistogram = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name: "server_handle_seconds",
 		Help: "The duration of the server handle",
 	}, []string{"type", "method", "status", "peer", "peer_host"})
 
-	serverHandleCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
+	ServerHandleCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "server_handle_total",
 		Help: "The total number of server handle",
 	}, []string{"type", "method", "peer", "peer_host"})
 
-	clientHandleCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
+	ClientHandleCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "client_handle_total",
 		Help: "The total number of client handle",
 	}, []string{"type", "method", "server"})
 
-	clientHandleHistogram = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+	ClientHandleHistogram = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name: "client_handle_seconds",
 		Help: "The duration of the client handle",
 	}, []string{"type", "method", "server"})
 
-	libraryCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
+	LibraryCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lib_handle_total",
 		Help: "The total number of third party library handle",
 	}, []string{"type", "method", "name", "server"})
@@ -68,7 +68,7 @@ func InitMetricRegistry() *customMetricRegistry {
 			"app":  internal.BuildInfo.AppName(),
 		})
 
-		MetricsReg.MustRegister(serverHandleHistogram, serverHandleCounter, clientHandleCounter, clientHandleHistogram, libraryCounter)
+		MetricsReg.MustRegister(ServerHandleHistogram, ServerHandleCounter, ClientHandleCounter, ClientHandleHistogram, LibraryCounter)
 		MetricsReg.MustRegister(
 			collectors.NewGoCollector(
 				collectors.WithGoCollectorRuntimeMetrics(collectors.GoRuntimeMetricsRule{
